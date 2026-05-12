@@ -18,7 +18,7 @@ Phương pháp truyền thống sử dụng lập trình cứng (hard-coded traj
 1. Xây dựng môi trường mô phỏng 3D robot UR5e trên PyBullet.
 2. Triển khai bộ giải Động học Thuận (FK) và Nghịch (IK) theo quy ước Denavit-Hartenberg.
 3. Thiết kế 3 chế độ điều khiển: Manual (tay), Auto (FSM + Trajectory Planning), AI (SAC RL).
-4. Huấn luyện agent AI thực hiện Pick & Place bằng Curriculum Learning hai giai đoạn.
+4. Huấn luyện agent AI thực hiện Pick & Place bằng SAC với Phase-Based Reward + Hybrid Gripper.
 5. So sánh hiệu suất giữa chế độ Auto (deterministic) và AI (adaptive).
 
 ### 1.3 Phạm vi đồ án
@@ -296,25 +296,22 @@ PHA 2 — PLACE:
 | net_arch | [256, 256, 256] | [256, 256] | Kiến trúc Actor/Critic |
 | use_sde | True | False | State-Dependent Exploration |
 
-#### 3.4.5 Curriculum Learning (Học theo giáo trình)
+#### 3.4.5 Quá trình Training (train_17d_place.py)
 
-**Phase 1 — Học Gắp (train_17d_grasp.py):**
-- Mục tiêu: Chỉ học tiếp cận + kích hoạt giác hút. Không cần mang tới bin.
-- Observation: 17D (giữ 17D để transition sang Phase 2 không bị lệch dimension).
-- Action: 7D — action[6] điều khiển gripper trực tiếp (chưa dùng Hybrid Gripper).
-- Reward: phạt khoảng cách (−dist × 2.0) + thưởng nâng (height × 10.0) + bonus +200 khi gắp & nâng 15cm.
-- MAX_STEPS = 150 (ngắn, buộc AI học nhanh).
-- Training: ~3 triệu steps, 4 envs, ~1 tiếng. Kết quả: 100% success rate.
+Hệ thống chỉ thực hiện **một lần training duy nhất** từ đầu (from scratch), không sử dụng Curriculum Learning hay Transfer Learning:
 
-**Phase 2 — Học Pick & Place (train_17d_place.py):**
-- Observation nâng lên 20D (thêm 3D EE euler để giám sát tư thế cổ tay).
-- MAX_STEPS = 300 (~12.5 giây simulation).
-- Đột phá 1 — Hybrid Gripper: AI KHÔNG điều khiển gripper, chỉ học navigation. Gripper tự gắp/nhả theo Phase. Loại bỏ hoàn toàn Reward Hacking.
-- Đột phá 2 — Physics-Level Euler Clamp (±15°): Trong hàm `move_ee_cartesian()`, Roll được kẹp quanh ±π (±15°), Pitch kẹp quanh 0 (±15°). AI luôn giữ tư thế thẳng đứng công nghiệp mà không cần hàm phạt phức tạp.
-- VecNormalize: Chuẩn hóa observation (mean=0, std=1) và reward tự động (`clip_obs=10, clip_reward=10`).
-- Training: 10 triệu steps, 16 parallel envs (SubprocVecEnv), ~3 tiếng trên Core i7, 16GB RAM.
-- Tốc độ: ~600 FPS (nhờ song song hóa 16 luồng CPU).
-- EvalCallback: Đánh giá mỗi 200K steps, 20 episodes, lưu best_model.zip + vecnormalize.pkl khớp nhau.
+- **Script:** `train_17d_place.py` — train trực tiếp toàn bộ quy trình Pick & Place.
+- **Observation:** 20D (thêm 3D EE euler để giám sát tư thế cổ tay).
+- **MAX_STEPS:** 300 (~12.5 giây simulation mỗi episode).
+- **Đột phá 1 — Hybrid Gripper:** AI KHÔNG điều khiển gripper, chỉ học navigation. Gripper tự gắp/nhả theo Phase. Loại bỏ hoàn toàn Reward Hacking.
+- **Đột phá 2 — Physics-Level Euler Clamp (±15°):** Trong hàm `move_ee_cartesian()`, Roll được kẹp quanh ±π (±15°), Pitch kẹp quanh 0 (±15°). AI luôn giữ tư thế thẳng đứng mà không cần hàm phạt phức tạp.
+- **VecNormalize:** Chuẩn hóa observation (mean=0, std=1) và reward tự động (`clip_obs=10, clip_reward=10`).
+- **Training:** 10 triệu steps, 16 parallel envs (SubprocVecEnv), ~3 tiếng trên Core i7, 16GB RAM.
+- **Tốc độ:** ~600 FPS nhờ song song hóa 16 luồng CPU.
+- **EvalCallback:** Đánh giá mỗi 200K steps, 20 episodes. Lưu `best_model.zip` + `vecnormalize.pkl` khớp nhau.
+- **Kết quả:** 100% success rate, tư thế thẳng đứng y hệt Auto Mode.
+
+**Ghi chú:** File `train_17d_grasp.py` tồn tại như bản thiết kế Curriculum Learning 2 giai đoạn, nhưng thực tế không sử dụng vì `train_17d_place.py` đã hội tụ tốt từ đầu nhờ Hybrid Gripper + Phase-Based Reward.
 
 #### 3.4.6 Safety Layers (Lớp bảo vệ khi Inference)
 - **Jam Detector:** Nếu EE di chuyển < 2mm trong 200 frames liên tiếp (~3.3 giây) → release gripper + Auto-Home (Phase 3→4: nâng lên → về HOME bằng Joint interpolation). Vật thể KHÔNG bị xóa → AI thử lại.
@@ -353,14 +350,11 @@ PHA 2 — PLACE:
 5. Retract: nâng lên → về HOME → spawn vật mới → lặp lại vô hạn.
 
 ### 4.2 Kết quả Training
-**Phase 1 (Grasp):**
-- Steps: 3,000,000 | Envs: 4 | Thời gian: ~60 phút
-- Success rate: 100% | Mean reward: ~150
-
-**Phase 2 (Pick & Place):**
+**Training duy nhất (train_17d_place.py — from scratch):**
 - Steps: 10,000,000 | Envs: 16 | Thời gian: ~3 tiếng
 - Success rate: 100% (kiểm chứng trên 50 chu kỳ ngẫu nhiên) | FPS: ~600
 - Tư thế thao tác (Orientation): Thẳng đứng y hệt Auto Mode (nhờ Physics Clamp ±15°).
+- Output: `models_rl_17d/seed42/best_model.zip` + `vecnormalize.pkl`
 
 ### 4.3 So sánh Auto vs AI
 

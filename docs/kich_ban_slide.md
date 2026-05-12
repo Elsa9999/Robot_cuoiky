@@ -268,19 +268,27 @@ Obs (20D) ──► Actor [256→256] ──► Action (7D)
 
 ---
 
-## SLIDE 15 — CURRICULUM LEARNING
+## SLIDE 15 — QUÁ TRÌNH TRAINING
 **Nội dung:**
-- Phase 1 (Học Gắp): 3M steps, ~1 tiếng → AI biết gắp 100%
-- Phase 2 (Học Pick&Place): 10M steps, 16 envs song song, ~3 tiếng → AI biết cả quy trình với tư thế cực chuẩn
-- Transfer Learning & Physics Clamp: Sự kết hợp hoàn hảo giúp thời gian hội tụ rút ngắn gần một nửa!
+- Train từ đầu (from scratch) — 1 lần duy nhất, KHÔNG dùng Curriculum Learning
+- Script: `train_17d_place.py` — train trực tiếp toàn bộ quy trình Pick & Place
+- Hội tụ tốt nhờ 3 đột phá: Hybrid Gripper + Phase-Based Reward + Physics Clamp
+- File `train_17d_grasp.py` tồn tại như bản thiết kế Curriculum nhưng không cần sử dụng
 
 **Hình ảnh:**
 ```
-[Phase 1: Gắp]         [Phase 2: Pick & Place]
-  3M steps    ──────►    10M steps
-  4 envs      weights    16 envs
-  1 tiếng     transfer   ~3 tiếng
-  100%                   100% (cả Test & HMI)
+┌─────────────────────────────────────────────┐
+│  train_17d_place.py — FROM SCRATCH          │
+│                                             │
+│  10M steps │ 16 envs │ ~3 tiếng │ ~600 FPS  │
+│                                             │
+│  ✓ Hybrid Gripper: AI chỉ học bay           │
+│  ✓ Phase-Based Reward: 3 giai đoạn          │
+│  ✓ Physics Clamp ±15°: tư thế thẳng đứng   │
+│  ✓ VecNormalize: observation + reward       │
+│                                             │
+│  Kết quả: 100% success rate                 │
+└─────────────────────────────────────────────┘
 ```
 
 ---
@@ -288,14 +296,16 @@ Obs (20D) ──► Actor [256→256] ──► Action (7D)
 ## SLIDE 16 — KẾT QUẢ TRAINING
 **Nội dung:**
 
-| Metric | Phase 1 | Phase 2 |
-|---|---|---|
-| Steps | 3,000,000 | 10,000,000 |
-| Envs song song | 4 | 16 |
-| Thời gian | ~60 phút | ~3 tiếng |
-| Success rate | 100% | 100% (Tuyệt đối) |
-| FPS | ~200 | ~600 |
-| Hardware | Core i7, 16GB RAM | Core i7, 16GB RAM |
+| Metric | Giá trị |
+|---|---|
+| Script | train_17d_place.py (from scratch) |
+| Steps | 10,000,000 |
+| Envs song song | 16 (SubprocVecEnv) |
+| Thời gian | ~3 tiếng |
+| Success rate | 100% (Tuyệt đối) |
+| FPS | ~600 |
+| Hardware | Core i7, 16GB RAM |
+| Output | best_model.zip + vecnormalize.pkl |
 
 **Hình ảnh:** Screenshot TensorBoard (nếu có) hoặc bảng log training cuối cùng
 

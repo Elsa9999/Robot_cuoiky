@@ -152,22 +152,26 @@ PHA 2 — PLACE:
 
 Lưu ý đột phá: Physics Clamp ±15° trực tiếp trong môi trường vật lý, AI luôn giữ tư thế thẳng đứng.
 
-**SLIDE 15 — CURRICULUM LEARNING:**
-2 giai đoạn:
-- Phase 1 (Học Gắp): 3M steps, 4 envs, ~1h, 17D obs → 100% gắp
-- Phase 2 (Pick&Place): 10M steps, 16 envs, ~3h, 20D obs, Hybrid Gripper + VecNormalize → 100%
-- Sơ đồ: Phase 1 (weights) →transfer→ Phase 2
+**SLIDE 15 — QUÁ TRÌNH TRAINING:**
+Train từ đầu (from scratch) — 1 lần duy nhất, KHÔNG dùng Curriculum Learning:
+- Script: `train_17d_place.py`
+- 10M steps, 16 envs song song, ~3 tiếng
+- Hội tụ tốt nhờ 3 đột phá: Hybrid Gripper + Phase-Based Reward + Physics Clamp
+- File `train_17d_grasp.py` tồn tại như bản thiết kế Curriculum nhưng không cần sử dụng
+- Sơ đồ: Block diagram với 4 yếu tố then chốt → 100% success
 
 **SLIDE 16 — KẾT QUẢ TRAINING:**
 Bảng:
-| Metric | Phase 1 | Phase 2 |
-|---|---|---|
-| Steps | 3,000,000 | 10,000,000 |
-| Envs | 4 | 16 |
-| Thời gian | ~60 phút | ~3 tiếng |
-| Success rate | 100% | 100% |
-| FPS | ~200 | ~600 |
-| Hardware | Core i7, 16GB RAM | Core i7, 16GB RAM |
+| Metric | Giá trị |
+|---|---|
+| Script | train_17d_place.py (from scratch) |
+| Steps | 10,000,000 |
+| Envs | 16 (SubprocVecEnv) |
+| Thời gian | ~3 tiếng |
+| Success rate | 100% |
+| FPS | ~600 |
+| Hardware | Core i7, 16GB RAM |
+| Output | best_model.zip + vecnormalize.pkl |
 
 **SLIDE 17 — SO SÁNH AUTO vs AI:**
 Bảng:
