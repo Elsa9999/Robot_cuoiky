@@ -121,12 +121,17 @@
 
 ---
 
-## SLIDE 9 — ĐỘNG HỌC NGHỊCH (IK)
+## SLIDE 9 — ĐỘNG HỌC NGHỊCH (IK) & KIỂM CHỨNG
 **Nội dung:**
 - Bài toán: biết vị trí (x,y,z) và hướng cần vươn tới → tìm 6 góc quay [q1...q6]
 - **Giải pháp:** Xây dựng Hybrid Solver 2 lớp cực kỳ tối ưu:
-  - **Lớp 1:** Analytical (giải tích) → tốc độ < 1ms, đưa ra 8 nghiệm chính xác. Nhóm tự động chọn nghiệm ít phải xoay khớp nhất (gần cấu hình hiện tại/Home nhất).
-  - **Lớp 2:** Numerical (phương pháp số L-BFGS-B từ SciPy) → tốc độ < 10ms. Chỉ kích hoạt khi Lớp 1 không tìm thấy nghiệm (điểm kỳ dị/singularities).
+  - **Lớp 1:** Analytical (giải tích) → tốc độ < 1ms, đưa ra 8 nghiệm. Tự động chọn nghiệm ít phải xoay khớp nhất.
+  - **Lớp 2:** Numerical (phương pháp số L-BFGS-B từ SciPy) → tốc độ < 10ms. Kích hoạt dự phòng khi giải tích thất bại.
+- **Kiểm chứng Round-Trip (Vòng lặp kín):**
+  - Chạy code tính xuôi: Góc Q gốc → FK → Tọa độ XYZ.
+  - Chạy code tính ngược: Tọa độ XYZ → IK → Giải ra góc Q'.
+  - Tính lại lần cuối: Góc Q' → FK → Tọa độ XYZ'.
+  - Kết quả: Sai số giữa XYZ gốc và XYZ' < 1mm (0.001m) → Chứng minh FK và IK đều đúng toán học 100%!
 
 **Hình ảnh:** Flowchart:
 ```
