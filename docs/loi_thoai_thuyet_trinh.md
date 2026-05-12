@@ -31,7 +31,7 @@
 "Để robot không bị giật cứng khi di chuyển, em triển khai nội suy quỹ đạo Joint Space theo hình thang (Trapezoidal profile) để tăng/giảm tốc mượt mà. Đặc biệt, nội suy Cartesian Linearity được dùng ở giai đoạn cắm đầu gắp xuống vật để đảm bảo tay bám chuyển động theo một đường tịnh tiến thẳng tuyệt đối."
 
 **[SLIDE 10 - CHẾ ĐỘ AUTO FSM]**
-"Đây là chế độ điều khiển theo lập trình truyền thống. Hệ thống vận hành như một cỗ máy trạng thái (State Machine) gồm 10 bước tuần tự. Nó hoạt động với độ thành công khá cao, nhưng nhược điểm là cực kỳ cứng nhắc: nếu vật rơi ra khỏi vùng cấu hình cho trước, nó sẽ không biết cách tự xoay sở."
+"Đây là chế độ điều khiển theo lập trình truyền thống. Hệ thống vận hành như một cỗ máy trạng thái (State Machine) gồm 11 bước tuần tự: từ IDLE → DETECT → APPROACH → DESCEND → PICK → LIFT → MOVE_TO_BIN → PLACE → RELEASE → RETREAT → DONE. Nó hoạt động với độ thành công 100%, nhưng nhược điểm là cứng nhắc: nếu vật rơi ra khỏi vùng cấu hình cho trước, nó sẽ không biết cách tự xoay sở."
 
 **[SLIDE 11 - GIỚI THIỆU HỌC TĂNG CƯỜNG]**
 "Để giải quyết sự cứng nhắc đó, em chuyển sang sử dụng Học tăng cường (Reinforcement Learning). Không cần lập trình tọa độ cụ thể, robot sẽ tự biến mình thành một điệp viên: Nhìn vào môi trường (State), Giao quyết định (Action), và nhận Điểm thưởng/phạt (Reward) để cải thiện hiệu suất sau hàng triệu lần sai nghiệm."
@@ -40,19 +40,19 @@
 "Thuật toán cốt lõi được chọn là Soft Actor-Critic (SAC). Sự vượt trội của SAC nằm ở chỗ nó không chỉ tối đa hóa Phần thưởng, mà còn tối đa hóa 'Entropy' – tức là luôn khuyến khích agent tìm tòi nhiều quỹ đạo bay mới. Kiến trúc của nó bao gồm mạng Nơ-ron Actor quyết định bước đi và 2 mạng Critic đánh giá độ hiệu quả."
 
 **[SLIDE 13 - OBSERVATION & ACTION]**
-"Đầu vào của AI là 17 chiều dữ liệu, bao gồm vị trí tương đối giữa tay kẹp, vật và thùng rác, kèm theo Quaternion góc xoay của bề mặt. Tương ứng, Robot sẽ xuất ra hành động 7 chiều (7D Action), bao gồm dịch chuyển XYZ, xoay cổ tay Roll-Pitch-Yaw và lệnh Bật/Tắt giác hút."
+"Đầu vào của AI là vector 20 chiều dữ liệu, bao gồm: vị trí EE và vật thể, vector tương đối EE→Vật và Vật→Bin, Quaternion hướng vật thể, trạng thái gripper, và 3 góc Euler của cổ tay EE để giám sát tư thế. Về đầu ra, Robot xuất hành động 7 chiều gồm dịch chuyển XYZ và xoay cổ tay Roll-Pitch-Yaw. Đặc biệt, chiều thứ 7 — điều khiển gripper — hoàn toàn KHÔNG được AI sử dụng. Thay vào đó, em áp dụng cơ chế Hybrid Gripper: gripper tự động gắp khi EE gần vật dưới 4.5cm, và tự nhả khi gần bin. AI chỉ cần học cách bay tới đâu — không cần học gripper timing — loại bỏ hoàn toàn Reward Hacking."
 
 **[SLIDE 14 - THIẾT KẾ HÀM REWARD] (Nhấn mạnh sự sáng tạo ở đây)**
 "Chỗ này là thách thức lớn nhất của đồ án. Nếu chỉ dùng hàm phạt (penalty), AI sẽ chây lười và tự động hack điểm bằng cách đứng im lượn lờ. Để khắc phục, em đã giải quyết bằng một giải pháp thông minh hơn: Chuyển đổi ràng buộc vào Môi trường Vật lý, kẹp cứng giới hạn góc Euler gắp vật. Giúp Hàm Reward vô cùng đơn giản, AI chỉ tập trung hạ thấp trọng tâm mà vẫn đẩm bảo chuẩn tư thế công nghiệp."
 
-**[SLIDE 15 - CURRICULUM LEARNING]**
-"Thay vì bắt AI học toàn bộ thao tác cùng lúc và tốn tuần để huấn luyện, em dùng phương pháp 'Tiến hoá': Phase 1 chỉ cho học cách gắp (Grasp), sau khi thuần thục, em truyền Weights Model đó sang Phase 2 để dạy mang tới thùng rác. Sự kết hợp Transfer Learning này giúp AI hội tụ thành công tuyệt đối chỉ mất chưa tới 2.5 tiếng đồng hồ với 5.5 triệu steps."
+**[SLIDE 15 — QUÁ TRÌNH TRAINING]**
+"Về quá trình huấn luyện, em chỉ thực hiện một lần training duy nhất từ đầu — from scratch — bằng script train_17d_place.py, không sử dụng Curriculum Learning hay Transfer Learning. Điều này khả thi nhờ 3 đột phá thiết kế: Thứ nhất, Hybrid Gripper giúp AI không cần học gripper timing. Thứ hai, Phase-Based Reward chia rõ 3 giai đoạn Approach → Carry → Place. Thứ ba, Physics-Level Euler Clamp kẹp trực tiếp góc Roll và Pitch trong hàm vật lý, ép tay máy luôn thẳng đứng mà không cần hàm phạt phức tạp. Ngoài ra, VecNormalize chuẩn hóa observation và reward tự động, giúp hội tụ ổn định. File train_17d_grasp.py tồn tại trong repo như bản thiết kế Curriculum 2 giai đoạn, nhưng thực tế không cần sử dụng vì train_17d_place.py đã hội tụ tốt từ đầu."
 
 **[SLIDE 16 - KẾT QUẢ TRAINING]**
-"Như bảng trên slide, ở giai đoạn Pick & Place phức tạp nhất, chúng em thiết lập chạy 20 môi trường hoàn toàn song song đa luồng. Kết quả đem lại FPS mô phỏng đạt ~600, và tỷ lệ thả vật thành công đạt chuẩn 100% không để rơi rớt một lần nào."
+"Như bảng trên slide, em chạy 10 triệu steps với 16 môi trường hoàn toàn song song đa luồng trên SubprocVecEnv. Tốc độ mô phỏng đạt khoảng 600 FPS, và toàn bộ quá trình training mất khoảng 3 tiếng trên Core i7, 16GB RAM. Kết quả: tỷ lệ thả vật thành công đạt 100 phần trăm tuyệt đối, kiểm chứng trên 50 chu kỳ ngẫu nhiên. Tư thế thao tác thẳng đứng y hệt chế độ Auto nhờ Physics Clamp ±15 độ. Output là cặp file best_model.zip và vecnormalize.pkl được lưu khớp nhau qua EvalCallback."
 
 **[SLIDE 17 - SO SÁNH AUTO vs AI]**
-"So sánh hai phương pháp: Cả hai đều đạt 100% tỉ lệ thành công. Tuy nhiên, thay vì tốn cả tháng trời lập trình logic, thì Mạng Nơ ron AI đã giải quyết linh hoạt trọn vẹn quỹ đạo chỉ thông qua việc định nghĩa Điểm cấu trúc. Tư thế thả vật hoàn toàn chuẩn chỉ như máy móc."
+"So sánh hai phương pháp: Cả hai đều đạt 100% tỉ lệ thành công. Tuy nhiên, chế độ Auto cần lập trình cứng từng bước quỹ đạo trong 11 trạng thái FSM, nên rất cứng nhắc. Trong khi đó, AI chỉ cần định nghĩa hàm Reward và để mạng Nơ-ron tự tìm quỹ đạo tối ưu, thích nghi linh hoạt khi vật ở bất kỳ vị trí nào. Tư thế thả vật của AI hoàn toàn chuẩn chỉ — thẳng đứng 90 độ — nhờ giới hạn vật lý Euler Clamp."
 
 **[SLIDE 18 - DEMO TRỰC TIẾP] (Nếu thầy cô cho chạy Demo)**
 "Sau đây, em xin phép chạy trực tiếp phần mềm HMI. Đây là giao diện của ứng dụng. (Vừa thao tác vừa nói) Đầu tiên là chuyển sang Tab Auto để robot đi theo đường mũi thẳng... Sau đó bật sang AI Mode, robot lập tức thể hiện khả năng di chuyển mượt mà, áp gắp vật một cách tối ưu bằng bộ não Nơ-ron."
