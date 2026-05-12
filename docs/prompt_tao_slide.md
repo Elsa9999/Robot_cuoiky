@@ -84,8 +84,8 @@ Sơ đồ 3 tầng (block diagram):
 
 **SLIDE 7B — KIỂM CHỨNG DH:**
 - Bảng DH được code bằng NumPy (hàm dh_transform).
-- Kiểm chứng độc lập: so sánh ma trận T kết quả giữa Python tự code và Matlab Robotics Toolbox → sai số = 0.
-- Hình minh họa: code snippet Python bên trái, terminal Matlab bên phải.
+- Kiểm chứng độc lập: so sánh kết quả tính tay (NumPy) với tọa độ trả về từ PyBullet → sai số = 0.
+- Hình minh họa: code snippet Python bên trái, khung hình mô phỏng PyBullet bên phải.
 
 **SLIDE 8 — ĐỘNG HỌC NGHỊCH (IK):**
 - Hybrid Solver 2 lớp:

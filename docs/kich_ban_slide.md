@@ -112,12 +112,11 @@
 - Công thức: T_EE = T1 x T2 x T3 x T4 x T5 x T6
 - **Code Python:** Viết hàm `forward_kinematics(q)` sử dụng thư viện `NumPy` để tính toán ma trận T cực nhanh.
 - **Kiểm chứng độc lập (Verify):** 
-  - So sánh kết quả tính tay (NumPy) với Engine Vật lý PyBullet.
-  - So sánh đối chiếu chéo với phần mềm Matlab (Robotics System Toolbox).
+  - So sánh kết quả tính tay (NumPy) với vị trí thực tế trên Engine Vật lý PyBullet.
   - Kết quả: Sai số Euclidean ~ 0 (Hoàn toàn trùng khớp!).
 
 **Hình ảnh đề xuất:**
-- Một ảnh ghép gồm: (1) Đoạn code nhân ma trận `T = T @ Ti`, (2) Ảnh chụp Terminal Terminal Python báo "UNIT TEST PASS", và (3) Ảnh chụp Command Window của Matlab in ra cùng 1 kết quả ma trận T.
+- Một ảnh ghép gồm: (1) Đoạn code nhân ma trận `T = T @ Ti`, và (2) Ảnh chụp Terminal Terminal Python báo "UNIT TEST PASS" cùng với khung hình PyBullet tương ứng.
 
 ---
 

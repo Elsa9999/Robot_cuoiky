@@ -25,7 +25,7 @@
 "Về mặt toán học, nhóm thiết lập hệ trục tọa độ tại từng khớp theo đúng quy tắc Standard Denavit-Hartenberg (DH Chuẩn). Bảng tham số (a, d, alpha) được nhóm tham khảo từ các tài liệu chuẩn quốc tế và đối chiếu khớp 100% với file thiết kế cơ khí (URDF) từ chính hãng Universal Robots."
 
 **[SLIDE 8 - ĐỘNG HỌC THUẬN FK & KIỂM CHỨNG]**
-"Từ bảng DH, em xây dựng hàm Động học thuận bằng cách nhân liên tiếp 6 ma trận biến đổi 4x4. Để hội đồng yên tâm về tính chính xác, nhóm đã kiểm chứng độc lập kết quả tính tay bằng NumPy so với phần mềm Matlab (Robotics System Toolbox) và engine PyBullet. Sai số hoàn toàn bằng 0."
+"Từ bảng DH, em xây dựng hàm Động học thuận bằng cách nhân liên tiếp 6 ma trận biến đổi 4x4. Để hội đồng yên tâm về tính chính xác, nhóm đã kiểm chứng độc lập kết quả tính tay bằng NumPy so với vị trí báo về từ engine vật lý PyBullet. Sai số hoàn toàn bằng 0."
 
 **[SLIDE 9 - ĐỘNG HỌC NGHỊCH IK & KIỂM CHỨNG] (Nhấn mạnh sự kỹ tính của kỹ sư)**
 "Đối với bài toán Động học Nghịch, em đã lập trình một bộ giải Hybrid 2 lớp: Đầu tiên giải bằng Phương pháp Giải tích để lấy tốc độ dưới 1 mili-giây. Nếu gặp điểm mù (singularity), thuật toán Số học L-BFGS-B sẽ tự kích hoạt dự phòng. Đặc biệt, nhóm đã tự kiểm chứng bằng phương pháp Round-Trip vòng lặp kín: nạp góc vào FK ra tọa độ, nạp tọa độ đó vào IK để giải ngược lại ra góc mới. Sai số tính toán chưa tới 1 mm, khẳng định 2 hàm Động học đúng tuyệt đối 100%!"
