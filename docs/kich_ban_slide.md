@@ -96,7 +96,7 @@
 
 ## SLIDE 7 — ĐẶT TRỤC VÀ BẢNG DH
 **Nội dung:**
-- Thiết lập hệ trục tọa độ XYZ tại từng khớp theo đúng quy tắc Denavit-Hartenberg.
+- Thiết lập hệ trục tọa độ XYZ tại từng khớp theo đúng quy tắc Standard Denavit-Hartenberg (DH Chuẩn).
 - Trích xuất bảng tham số cấu trúc (a, d, α) dựa trên tài liệu chuẩn (Hawkins 2013, Andersen 2018) và đối chiếu khớp 100% với file thiết kế `ur5e.urdf` của hãng.
 - **Lưu ý hội đồng:** Các thông số $a_4, a_5, a_6 = 0$ vì cụm cổ tay của UR5e là Spherical Wrist (các trục cắt nhau tại 1 điểm, không có khoảng cách vuông góc chung).
 
