@@ -136,16 +136,25 @@ Học Tăng Cường xem thuật toán AI như một Blackbox (Agent) tương t�
 4. Agent tự động cập nhật mạng nơ-ron để tối đa hóa điểm số.
 
 #### 2.3.2 Ứng dụng Thuật toán Soft Actor-Critic (SAC)
-SAC là thuật toán Off-Policy thuộc họ Actor-Critic. Thay vì đi sâu vào kiến trúc toán học phức tạp của mạng nơ-ron, đồ án tập trung khai thác các đặc tính cơ điện tử của thuật toán này:
+SAC là thuật toán Off-Policy thuộc họ Actor-Critic, tối ưu hóa mục tiêu entropy-regularized (entropy-regularized objective):
+
+π* = argmax_π E[Σ γ^t (r_t + α H(π(·|s_t)))]
+
+Trong đó:
+- γ: hệ số chiết khấu (discount factor) = 0.99
+- α: hệ số entropy, tự điều chỉnh (auto-tuning)
+- H(π): entropy của chính sách — khuyến khích đa dạng hành động
+
+Dù dựa trên nền tảng toán học phức tạp, đồ án tập trung khai thác các đặc tính cơ điện tử của thuật toán này khi áp dụng vào thực tế:
 
 **Tại sao chọn SAC cho Robot UR5e?**
-- **Continuous Action (Hành động liên tục):** Khác với các AI xử lý logic dạng rời rạc (lên/xuống/trái/phải), SAC xuất ra dải giá trị số thực liên tục. Điều này cực kỳ phù hợp để làm tín hiệu cấp cho các bộ PID nội suy góc xoay động cơ servo, giúp cánh tay di chuyển trơn tru, không giật cục.
-- **Sample-efficient:** Khả năng tận dụng lại dữ liệu cũ giúp robot học nhanh hơn nhiều so với thuật toán On-Policy thông thường.
-- **Tự cân bằng Khám phá:** Robot không bao giờ đi đúng một đường cố định mà luôn lân la tìm quỹ đạo bay ngắn và mượt hơn (nhờ cơ chế Entropy).
+- **Continuous Action (Hành động liên tục):** Khác với các AI xử lý logic rời rạc, SAC xuất ra dải giá trị số thực liên tục. Điều này cực kỳ phù hợp để làm tín hiệu cấp cho các bộ điều khiển nội suy góc xoay động cơ servo, giúp cánh tay di chuyển trơn tru.
+- **Sample-efficient:** Khả năng tận dụng lại dữ liệu cũ (Off-policy) giúp robot học nhanh hơn nhiều so với thuật toán On-Policy thông thường.
+- **Tự cân bằng Khám phá:** Nhờ tối đa hóa thành phần Entropy H(π), robot không bao giờ đi đúng một đường cố định mà luôn lân la tìm quỹ đạo bay mới để tối ưu hóa.
 
 **Kiến trúc mạng điều hướng:**
-- **Mạng Actor (Quyết định):** Nhận đầu vào là tọa độ không gian → Xuất ra vector vận tốc 7 chiều (ΔXYZ, ΔRPY).
-- **Mạng Critic (Chấm điểm):** Đánh giá xem quỹ đạo bay đó có an toàn và tối ưu không.
+- **Mạng Actor (Quyết định):** MLP [256 → 256]. Nhận đầu vào là tọa độ không gian (20D) → Xuất ra vector vận tốc (7D).
+- **Mạng Critic 1 & 2 (Chấm điểm):** MLP [256 → 256] → Q-value. Áp dụng Twin Critic để chống hiện tượng đánh giá quá mức (overestimation).
 
 ---
 
