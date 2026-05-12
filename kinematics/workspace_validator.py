@@ -31,8 +31,14 @@ class WorkspaceValidator:
     def __init__(self, limits=None):
         self._lim = limits if limits is not None else WORKSPACE_LIMITS
 
-    def is_valid_ee(self, pos) -> tuple:
-        """Kiểm tra tọa độ EE có hợp lệ không. Trả về (True/False, lý do)."""
+    def is_valid_ee(self, pos, skip_bin=False) -> tuple:
+        """Kiểm tra tọa độ EE có hợp lệ không. Trả về (True/False, lý do).
+        
+        Args:
+            pos: Tọa độ XYZ của End-Effector.
+            skip_bin: Nếu True, bỏ qua vùng cấm bin (dùng cho AI mode vì AI cần
+                      hạ xuống bin để thả vật). Manual/Auto vẫn bị chặn.
+        """
         x, y, z = float(pos[0]), float(pos[1]), float(pos[2])
         L = self._lim
 
@@ -43,11 +49,14 @@ class WorkspaceValidator:
         if z < L['z_min']: return False, f"Z={z:.3f} < z_min (duoi ban!)"
         if z > L['z_max']: return False, f"Z={z:.3f} > z_max"
 
-        b = L['bin_forbidden']
-        if (b['x'][0] <= x <= b['x'][1] and
-                b['y'][0] <= y <= b['y'][1] and
-                b['z'][0] <= z <= b['z'][1]):
-            return False, "EE trong vung cam bin!"
+        # Vùng cấm bin — chỉ áp dụng cho Manual/Auto (ngăn đâm tay vào thùng).
+        # AI mode bỏ qua vì cần hạ xuống bin để thả vật.
+        if not skip_bin:
+            b = L['bin_forbidden']
+            if (b['x'][0] <= x <= b['x'][1] and
+                    b['y'][0] <= y <= b['y'][1] and
+                    b['z'][0] <= z <= b['z'][1]):
+                return False, "EE trong vung cam bin!"
 
         return True, "OK"
 

@@ -428,7 +428,8 @@ class SimBridge(QThread):
         
         # [FAIL-SAFE TỰ ĐỘNG GỠ RỐI 1] Out-of-Workspace Detector (Cảnh sát Vùng cấm)
         # Nếu user kéo tay máy bay ra khỏi giới hạn, reset ngay lập tức.
-        ok, reason = self._validator.is_valid_ee(ee_pos)
+        # skip_bin=True: AI cần được phép hạ xuống bin để thả vật (vùng cấm bin chỉ cho Manual/Auto)
+        ok, reason = self._validator.is_valid_ee(ee_pos, skip_bin=True)
         if not ok:
             self._push_log(f"Cảnh báo: AI văng khỏi vùng làm việc ({reason}). Kích hoạt Auto-Home!", 'WARN')
             self._env.release_gripper()
