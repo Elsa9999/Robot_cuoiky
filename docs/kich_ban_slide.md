@@ -98,10 +98,10 @@
 **Nội dung:**
 - Thiết lập hệ trục tọa độ XYZ tại từng khớp theo đúng quy tắc Standard Denavit-Hartenberg (DH Chuẩn).
 - Trích xuất bảng tham số cấu trúc (a, d, α) dựa trên tài liệu chuẩn (Hawkins 2013, Andersen 2018) và đối chiếu khớp 100% với file thiết kế `ur5e.urdf` của hãng.
-- **Lưu ý hội đồng:** Các thông số $a_4, a_5, a_6 = 0$ vì cụm cổ tay của UR5e là Spherical Wrist (các trục cắt nhau tại 1 điểm, không có khoảng cách vuông góc chung).
+- **Lưu ý hội đồng:** Các thông số a4, a5, a6 = 0 vì cụm cổ tay của UR5e là Spherical Wrist (các trục cắt nhau tại 1 điểm, không có khoảng cách vuông góc chung).
 
 **Hình ảnh đề xuất:** 
-- (Trái) Bảng DH 6 khớp với các thông số $a, d, \alpha, \theta$.
+- (Trái) Bảng DH 6 khớp với các thông số a, d, alpha, theta.
 - (Phải) Hình minh họa 3D robot UR5e với các vector trục XYZ màu Đỏ-Xanh lá-Xanh dương gắn tại từng khớp tương ứng.
 
 ---
@@ -109,12 +109,12 @@
 ## SLIDE 8 — ĐỘNG HỌC THUẬN (FK) & KIỂM CHỨNG
 **Nội dung:**
 - **Giải thuật:** Nhân liên tiếp 6 ma trận biến đổi thuần nhất 4x4.
-- Công thức: $T_{EE} = T_1 \times T_2 \times T_3 \times T_4 \times T_5 \times T_6$
+- Công thức: T_EE = T1 x T2 x T3 x T4 x T5 x T6
 - **Code Python:** Viết hàm `forward_kinematics(q)` sử dụng thư viện `NumPy` để tính toán ma trận T cực nhanh.
 - **Kiểm chứng độc lập (Verify):** 
   - So sánh kết quả tính tay (NumPy) với Engine Vật lý PyBullet.
   - So sánh đối chiếu chéo với phần mềm Matlab (Robotics System Toolbox).
-  - Kết quả: Sai số Euclidean $\approx 0$ (Hoàn toàn trùng khớp!).
+  - Kết quả: Sai số Euclidean ~ 0 (Hoàn toàn trùng khớp!).
 
 **Hình ảnh đề xuất:**
 - Một ảnh ghép gồm: (1) Đoạn code nhân ma trận `T = T @ Ti`, (2) Ảnh chụp Terminal Terminal Python báo "UNIT TEST PASS", và (3) Ảnh chụp Command Window của Matlab in ra cùng 1 kết quả ma trận T.
@@ -123,7 +123,7 @@
 
 ## SLIDE 9 — ĐỘNG HỌC NGHỊCH (IK)
 **Nội dung:**
-- Bài toán: biết vị trí $(x,y,z)$ và hướng cần vươn tới → tìm 6 góc quay $[q_1...q_6]$
+- Bài toán: biết vị trí (x,y,z) và hướng cần vươn tới → tìm 6 góc quay [q1...q6]
 - **Giải pháp:** Xây dựng Hybrid Solver 2 lớp cực kỳ tối ưu:
   - **Lớp 1:** Analytical (giải tích) → tốc độ < 1ms, đưa ra 8 nghiệm chính xác. Nhóm tự động chọn nghiệm ít phải xoay khớp nhất (gần cấu hình hiện tại/Home nhất).
   - **Lớp 2:** Numerical (phương pháp số L-BFGS-B từ SciPy) → tốc độ < 10ms. Chỉ kích hoạt khi Lớp 1 không tìm thấy nghiệm (điểm kỳ dị/singularities).
@@ -147,7 +147,7 @@ Input (xyz, euler) → Analytical Solver
 **Nội dung:**
 - **Joint Space (Không gian khớp):** Nội suy mượt mà các góc khớp để robot không bị giật. Sử dụng Trapezoidal Velocity Profile (Đồ thị vận tốc hình thang).
 - **Cartesian Space (Không gian làm việc):** Nội suy đường thẳng XYZ, gọi IK liên tục tại mỗi điểm trung gian để ghép thành quỹ đạo mượt (Joint Traj).
-- Đảm bảo giới hạn vận tốc tối đa ($v_{max}$) và gia tốc tối đa ($a_{max}$).
+- Đảm bảo giới hạn vận tốc tối đa (v_max) và gia tốc tối đa (a_max).
 
 **Hình ảnh:** Đồ thị velocity profile hình thang (trapezoidal):
 ```
@@ -224,8 +224,8 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 
 **Action Space (7 차원 - 7D):**
 - Tín hiệu điều khiển AI xuất ra:
-- $\Delta XYZ$ (±5cm/step): Vận tốc tịnh tiến
-- $\Delta Roll/Pitch/Yaw$ (±4.5°/step): Vận tốc xoay
+- Delta XYZ (±5cm/step): Vận tốc tịnh tiến
+- Delta Roll/Pitch/Yaw (±4.5°/step): Vận tốc xoay
 - *Hành động thứ 7 (Gripper) bị vô hiệu hóa bởi Hybrid Gripper.*
 
 ---
