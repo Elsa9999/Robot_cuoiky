@@ -200,17 +200,17 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 
 ---
 
-## SLIDE 13 — CƠ CHẾ HYBRID GRIPPER & PHYSICS CLAMP
+## SLIDE 13 — CƠ CHẾ HYBRID VACUUM & PHYSICS CLAMP
 **Nội dung:**
 - Đặt vấn đề: Huấn luyện AI lái 6 bậc tự do (6-DoF) Pick & Place từ số 0 là vô cùng khó, AI hay bị "ngáo".
 - Để giải quyết, nhóm áp dụng **2 đột phá cơ điện tử**:
-- **Đột phá 1 (Hybrid Gripper):** AI KHÔNG được quyền điều khiển bật/tắt giác hút chân không. Việc này giao cho cảm biến tiệm cận (cách <4.5cm thì hút). AI chỉ tập trung 100% vào việc "lái".
+- **Đột phá 1 (Hybrid Vacuum):** AI KHÔNG được quyền điều khiển bật/tắt giác hút chân không. Việc này giao cho cảm biến tiệm cận (cách <4.5cm thì hút). AI chỉ tập trung 100% vào việc "lái".
 - **Đột phá 2 (Physics-level Euler Clamp):** Gốc tọa độ cổ tay bị kẹp chặt bằng thuật toán vật lý. Góc nghiêng (Roll-Pitch) chỉ được dao động ±15°, ép cánh tay luôn ở tư thế chúc thẳng xuống mặt bàn chuẩn xác như Auto.
 
 **Hình ảnh:**
 ```
 [Physics Clamp] ──► Giữ thẳng tay (cấm xoay loạn xạ)
-[Hybrid Gripper] ─► Cảm biến tự động hút/nhả
+[Hybrid Vacuum] ──► Cảm biến tự động hút/nhả
        │
       Tạo môi trường an toàn để AI học cực nhanh!
 ```
@@ -224,14 +224,14 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 - Mắt AI nhìn thấy 20 thông số mỗi bước:
 - Vị trí EE, Vị trí vật (6D)
 - Vector khoảng cách EE→Vật và Vật→Bin (6D)
-- Hướng vật (Quaternion 4D) + Trạng thái kẹp (1D)
+- Hướng vật (Quaternion 4D) + Trạng thái hút (1D)
 - Góc nghiêng EE (Euler 3D)
 
 **Action Space (7 차원 - 7D):**
 - Tín hiệu điều khiển AI xuất ra:
 - Delta XYZ (±5cm/step): Vận tốc tịnh tiến
 - Delta Roll/Pitch/Yaw (±4.5°/step): Vận tốc xoay
-- *Hành động thứ 7 (Gripper) bị vô hiệu hóa bởi Hybrid Gripper.*
+- *Hành động thứ 7 (Bơm chân không) bị vô hiệu hóa bởi Hybrid Vacuum.*
 
 ---
 
@@ -257,7 +257,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 │  ★ THẢ VÀO BIN: +500 → DONE ✓  │
 └─────────────────────────────────┘
 ```
-- **Lưu ý:** Nhờ kết hợp Hybrid Gripper + Physics Clamp, hàm Reward được đơn giản hóa đi rất nhiều, triệt tiêu hoàn toàn khả năng Reward Hacking. AI hiểu rõ mục tiêu từng phase.
+- **Lưu ý:** Nhờ kết hợp Hybrid Vacuum + Physics Clamp, hàm Reward được đơn giản hóa đi rất nhiều, triệt tiêu hoàn toàn khả năng Reward Hacking. AI hiểu rõ mục tiêu từng phase.
 
 ---
 
@@ -265,7 +265,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 **Nội dung:**
 - Điểm khác biệt: **Train thẳng từ đầu (from scratch) trong 1 Phase duy nhất!**
 - Không sử dụng phương pháp Curriculum Learning (Chia nhỏ môi trường) phức tạp và tốn thời gian.
-- Tại sao làm được? Nhờ 3 đột phá đã trình bày: `Hybrid Gripper` + `Physics Clamp` + `Phase-Based Reward` → Môi trường đã được cách ly rủi ro hoàn hảo.
+- Tại sao làm được? Nhờ 3 đột phá đã trình bày: `Hybrid Vacuum` + `Physics Clamp` + `Phase-Based Reward` → Môi trường đã được cách ly rủi ro hoàn hảo.
 
 **Hình ảnh:**
 ```
@@ -353,5 +353,5 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 2. Tông màu đề xuất: Nền tối (dark/navy theme) + chữ trắng/xám sáng + accent xanh dương/cam.
 3. Font chữ: Roboto, Inter hoặc Montserrat (hiện đại, to rõ, dễ nhìn qua máy chiếu).
 4. Các sơ đồ code (ASCII) ở trên nên được vẽ lại bằng hình học (Shapes) trong PowerPoint/Canva.
-5. Tuyệt đối nhấn mạnh Slide 13, 14, 15 (Hybrid Gripper, Reward, Train từ Scratch) vì đây là "bài tẩy" của nhóm!
+5. Tuyệt đối nhấn mạnh Slide 13, 14, 15 (Hybrid Vacuum, Reward, Train từ Scratch) vì đây là "bài tẩy" của nhóm!
 6. Chuẩn bị sẵn file `best_model.zip` mở để chạy live (Slide 19).
