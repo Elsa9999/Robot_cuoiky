@@ -185,9 +185,9 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 
 ## SLIDE 12 — TẠI SAO CẦN AI (RL)?
 **Nội dung:**
-- **Hạn chế của Auto:** Chế độ Auto chạy rất mượt nhưng bị "cứng nhắc". Nếu chướng ngại vật xuất hiện ngẫu nhiên hoặc khay chứa đồ bị lệch, quỹ đạo đã lập trình cứng của Auto sẽ đâm thẳng gây va chạm!
+- **Hạn chế của Auto:** Chế độ Auto chạy theo quỹ đạo cố định (đường đi gấp khúc cứng nhắc). Nếu vật thể vô tình bị xê dịch trong lúc tay máy đang di chuyển, tay máy sẽ đi mù quáng đến vị trí cũ và gắp hụt.
 - **Giải pháp AI:** Nhóm chọn thuật toán Reinforcement Learning (Soft Actor-Critic - SAC) để thay thế khối FSM.
-- **Ưu điểm SAC:** Hoạt động trong không gian hành động liên tục (Continuous Action). AI sẽ "nhìn" môi trường (Observation) và "tự lái" (Action) tay máy mượt mà lách qua các điểm để gắp vật thả vào thùng.
+- **Ưu điểm SAC:** Khả năng tự thích nghi theo thời gian thực (Real-time Adaptation). Nếu vật thể di chuyển, AI lập tức cập nhật "tầm nhìn" (Observation) và bẻ lái tự đuổi theo vật thể bằng một quỹ đạo cong mượt mà.
 
 **Hình ảnh:** Sơ đồ vòng lặp Agent (SAC) ↔ Environment:
 ```
