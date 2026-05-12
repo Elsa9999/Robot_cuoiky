@@ -25,7 +25,7 @@ Hãy tạo cho tôi bộ slide PowerPoint thuyết trình đồ án môn học v
 ### NỘI DUNG TỪNG SLIDE
 
 **SLIDE 1 — TRANG BÌA:**
-Tên đề tài, tên sinh viên, GVHD, trường, năm. Hình nền: robot công nghiệp 6 bậc tự do.
+Tên đề tài, tên sinh viên, GVHD, trường, năm. Hình nền: Robot cộng tác (Cobot) 6 bậc tự do.
 
 **SLIDE 2 — NỘI DUNG TRÌNH BÀY:**
 Mục lục 7 phần:
@@ -106,11 +106,11 @@ Sơ đồ 3 tầng (block diagram):
 
 **SLIDE 11 — ỨNG DỤNG AI VÀO ĐIỀU HƯỚNG QUỸ ĐẠO:**
 - Tại sao dùng AI? Thay vì lập trình tọa độ cứng nhắc, robot tự học cách bay đến mục tiêu linh hoạt.
-- Thuật toán: Soft Actor-Critic (SAC). Chọn SAC vì nó xuất ra lệnh điều khiển động cơ liên tục (Continuous Action) cực kỳ trơn tru, rất phù hợp cho Robot công nghiệp.
+- Thuật toán: Soft Actor-Critic (SAC). Chọn SAC vì nó xuất ra lệnh điều khiển động cơ liên tục (Continuous Action) cực kỳ trơn tru, rất phù hợp cho Robot cộng tác (Cobot).
 - Kiến trúc mạng nơ-ron: Actor (quyết định bước đi) + 2 Critics (đánh giá quỹ đạo).
 
 **SLIDE 12 — CƠ CHẾ HYBRID GRIPPER & PHYSICS CLAMP:**
-Để AI có thể hoạt động như robot công nghiệp thực thụ, nhóm đã đưa ra 2 đột phá cơ điện tử:
+Để AI có thể hoạt động như một Cobot thực thụ, nhóm đã đưa ra 2 đột phá cơ điện tử:
 1. Cơ chế Hybrid Gripper: AI không được phép bật/tắt giác hút (tránh lỗi nhả rác bừa bãi). Thay vào đó, cảm biến tiệm cận sẽ tự hút khi cách vật <4.5cm, và tự nhả khi đến trên nắp thùng rác. AI chỉ làm nhiệm vụ **Điều hướng tay máy**.
 2. Physics-level Euler Clamp: Để đảm bảo tay máy không xoắn lộn xộn, gốc tọa độ bị kẹp cơ học ±15°. Trục Roll-Pitch luôn bị ép thẳng 90° chúc xuống mặt bàn.
 

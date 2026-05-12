@@ -46,7 +46,7 @@
 > **Prompt:** A presentation slide. Title: "SLIDE 14: THIẾT KẾ HÀM REWARD". Draw 3 clear boxes. Box 1: "PHA 0: Tới gần vật". Box 2: "PHA 1: Nâng cao 20cm". Box 3: "PHA 2: Thả vào Bin (+500)". Text below: "Giải quyết bài toán Reward Hacking". Background: Gamified popup scoring style (+500).
 
 **Slide 15: Training SAC**
-> **Prompt:** A presentation slide. Title: "SLIDE 15: TRAINING TỐI ƯU HÓA SAC". Text: "- Kịch bản 1: Curriculum Learning", "- Kịch bản 2: Train 1 phase duy nhất". Background: PyTorch loss graphs and a 3D robot learning. Clean infographic layout.
+> **Prompt:** A presentation slide. Title: "SLIDE 15: TRAINING TỐI ƯU HÓA SAC". Text: "- Huấn luyện 1 phase từ đầu (From Scratch)", "- KHÔNG dùng Curriculum Learning", "- Script: train_17d_place.py". Background: PyTorch loss graphs and a 3D robot learning. Clean infographic layout.
 
 **Slide 16: Kết quả Training**
 > **Prompt:** A presentation slide. Title: "SLIDE 16: KẾT QUẢ TRAINING UR5E". Draw a table. Columns: "Tiêu chí", "Kết quả". Rows: "Thành công", "100%", "Steps", "10 Triệu", "Thời gian", "3 tiếng". A massive glowing "100% SUCCESS" badge in the corner. Highly polished presentation style.
