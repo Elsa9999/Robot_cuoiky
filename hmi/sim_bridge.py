@@ -426,7 +426,17 @@ class SimBridge(QThread):
         # Build obs (13D hoặc 17D tùy model)
         ee_pos = np.array(self._env.get_ee_position(), dtype=np.float32)
         
-        # [FAIL-SAFE TỰ ĐỘNG GỠ RỐI] Cảm biến kẹt (Jam Detector)
+        # [FAIL-SAFE TỰ ĐỘNG GỠ RỐI 1] Out-of-Workspace Detector (Cảnh sát Vùng cấm)
+        # Nếu user kéo tay máy bay ra khỏi giới hạn, reset ngay lập tức.
+        ok, reason = self._validator.is_valid_ee(ee_pos)
+        if not ok:
+            self._push_log(f"Cảnh báo: AI văng khỏi vùng làm việc ({reason}). Kích hoạt Auto-Home!", 'WARN')
+            self._env.release_gripper()
+            self._ai_returning = 3
+            self._q_target = list(HOME_POSE)
+            return
+
+        # [FAIL-SAFE TỰ ĐỘNG GỠ RỐI 2] Cảm biến kẹt (Jam Detector)
         if not hasattr(self, '_ai_last_ee') or self._ai_last_ee is None:
             self._ai_last_ee = ee_pos
             self._ai_stuck_frames = 0
