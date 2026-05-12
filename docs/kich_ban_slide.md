@@ -218,18 +218,16 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ## SLIDE 14 — OBSERVATION & ACTION SPACE
 **Nội dung hiển thị trên Slide (TỐI GIẢN):**
 
-**Observation Space (20 차원 - 20D):**
-- Mắt AI nhìn thấy 20 thông số mỗi bước:
-- Vị trí EE, Vị trí vật (6D)
-- Vector khoảng cách EE→Vật và Vật→Bin (6D)
-- Hướng vật (Quaternion 4D) + Trạng thái hút (1D)
-- Góc nghiêng EE (Euler 3D)
+**Observation Space (20D):**
+- Tọa độ EE & Vật thể (6D).
+- Vector khoảng cách tương đối (6D).
+- Hướng vật (Quaternion - 4D).
+- Góc nghiêng EE (3D) + Trạng thái hút (1D).
 
-**Action Space (7 차원 - 7D):**
-- Tín hiệu điều khiển AI xuất ra:
-- Delta XYZ (±5cm/step): Vận tốc tịnh tiến
-- Delta Roll/Pitch/Yaw (±4.5°/step): Vận tốc xoay
-- *Hành động thứ 7 (Bơm chân không) bị vô hiệu hóa bởi Hybrid Vacuum.*
+**Action Space (7D):**
+- Vận tốc tịnh tiến XYZ (3D).
+- Vận tốc xoay Roll-Pitch-Yaw (3D).
+- *Hành động số 7 (Bơm hút) vô hiệu hóa.*
 
 ---
 

@@ -39,8 +39,8 @@
 **Slide 12: Hybrid Gripper & Physics Clamp**
 > **Prompt:** A presentation slide. Title: "SLIDE 12: ĐỘT PHÁ CƠ ĐIỆN TỬ". Left text: "Hybrid Gripper: Cảm biến PyBullet tự hút/nhả". Right text: "Physics Clamp: Ép khớp cổ tay UR5e thẳng 90 độ". Background: macro shot of a robot vacuum gripper with a glowing lock icon.
 
-**Slide 13: Observation & Action**
-> **Prompt:** A presentation slide. Title: "SLIDE 13: OBSERVATION & ACTION". Draw two tables. Table 1: "Observation (20D)" with rows "Tọa độ UR5e", "Vị trí vật", "Quaternion". Table 2: "Action (7D)" with rows "Vận tốc XYZ", "Vận tốc xoay RPY". Perfectly aligned minimalist tables.
+**Slide 14: Observation & Action**
+> **Prompt:** A highly professional, dark-themed architectural blueprint diagram. Title: "SLIDE 14: OBSERVATION & ACTION". Draw two minimalist data flow tables on dark navy blue grid paper. Table 1 (Cyan neon borders): "Observation (20D)" with rows "Tọa độ UR5e", "Vị trí vật", "Quaternion". Table 2 (Orange neon borders): "Action (7D)" with rows "Vận tốc XYZ", "Vận tốc xoay RPY", "Bơm hút (Vô hiệu hóa)". The drawing style should be technical, clean, using white, cyan, and orange neon lines. No complex background. Make it look like a high-tech engineering schematic.
 
 **Slide 14: Thiết kế Hàm Reward**
 > **Prompt:** A presentation slide. Title: "SLIDE 14: THIẾT KẾ HÀM REWARD". Draw 3 clear boxes. Box 1: "PHA 0: Tới gần vật". Box 2: "PHA 1: Nâng cao 20cm". Box 3: "PHA 2: Thả vào Bin (+500)". Text below: "Giải quyết bài toán Reward Hacking". Background: Gamified popup scoring style (+500).
