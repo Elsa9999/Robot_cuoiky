@@ -38,9 +38,9 @@ Mục lục 7 phần:
 7. Kết luận & Hướng phát triển
 
 **SLIDE 3 — ĐẶT VẤN ĐỀ:**
-- Robot công nghiệp cần Pick & Place trong sản xuất.
+- Robot cộng tác (Cobot) cần thao tác Pick & Place trong sản xuất.
 - Thách thức: vật nằm ngẫu nhiên, 6 bậc tự do, quỹ đạo tránh va chạm.
-- Câu hỏi: "AI (RL) có thể tự học điều khiển robot mà không cần lập trình cứng?"
+- Câu hỏi: "AI (RL) có thể tự học điều khiển Cobot mà không cần lập trình cứng?"
 - Sơ đồ so sánh: Truyền thống (FSM+IK, ổn định nhưng cứng nhắc) vs Học Tăng Cường (SAC, tự thích nghi nhưng training lâu).
 
 **SLIDE 4 — MỤC TIÊU:**

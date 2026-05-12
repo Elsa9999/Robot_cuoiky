@@ -30,9 +30,9 @@
 
 ## SLIDE 3 — ĐẶT VẤN ĐỀ
 **Nội dung:**
-- Robot công nghiệp cần thực hiện Pick & Place trong sản xuất
+- Robot cộng tác (Cobot) cần thực hiện thao tác Pick & Place trong sản xuất
 - Thách thức: vật thể nằm ngẫu nhiên, cần tính quỹ đạo tránh va chạm, 6 bậc tự do
-- Câu hỏi nghiên cứu: "Liệu AI (RL) có thể tự học điều khiển robot Pick & Place mà không cần lập trình cứng quỹ đạo?"
+- Câu hỏi nghiên cứu: "Liệu AI (RL) có thể tự học điều khiển Cobot Pick & Place mà không cần lập trình cứng quỹ đạo?"
 
 **Hình ảnh:** Sơ đồ so sánh 2 hướng:
 ```
