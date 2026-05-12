@@ -39,6 +39,36 @@ Phương pháp truyền thống sử dụng lập trình cứng (hard-coded traj
 | Giải phương trình phi tuyến | SciPy (L-BFGS-B) | 1.10+ |
 | Trực quan hóa training | TensorBoard | 2.0+ |
 
+### 1.5 Cấu trúc thư mục dự án
+```
+do_an_robot_v2/
+├── kinematics/                 # Động học — Tự code bằng NumPy/SciPy
+│   ├── forward_kinematics.py    # FK — 6 góc khớp → vị trí EE
+│   ├── inverse_kinematics.py    # IK Hybrid — Analytical + L-BFGS-B
+│   ├── trajectory.py            # Quy hoạch quỹ đạo Joint/Cartesian
+│   └── workspace_validator.py   # Kiểm tra giới hạn vùng làm việc
+├── simulation/                 # Mô phỏng vật lý PyBullet
+│   ├── environment.py           # Thế giới vật lý (bàn, bin, robot, vật)
+│   ├── gripper.py               # Giác hút chân không (Vacuum Gripper)
+│   ├── object_detector.py       # Camera ảo (Raycast)
+│   ├── pick_place_sm.py         # FSM 11 trạng thái cho chế độ Auto
+│   ├── trajectory_executor.py   # Bộ thực thi quỹ đạo (240Hz)
+│   └── manual_controller.py     # Điều khiển tay bằng HMI
+├── hmi/                        # Giao diện người dùng PyQt5
+│   ├── app.py                   # Entry point chính
+│   ├── main_window.py           # Cửa sổ chính + layout
+│   ├── sim_bridge.py            # Cầu nối HMI ↔ PyBullet (QThread)
+│   └── widgets/                 # 7 panels giao diện
+├── utils/
+│   └── transforms.py            # Chuyển hệ tọa độ DH ↔ PyBullet
+├── urdf/                       # Mô hình 3D robot UR5e (URDF + mesh)
+├── models_rl_17d/              # Model SAC đã train (best_model.zip)
+├── train_17d_grasp.py          # Script train Phase 1
+├── train_17d_place.py          # Script train Phase 2
+├── run_demo.py                 # Chạy demo AI (inference)
+└── docs/                       # Tài liệu
+```
+
 ---
 
 ## CHƯƠNG 2: CƠ SỞ LÝ THUYẾT
@@ -131,10 +161,53 @@ Trong đó:
 
 ### 3.1 Kiến trúc tổng thể
 Hệ thống chia thành 4 tầng:
-1. **Tầng Giao diện (HMI):** PyQt5, chạy trên Main Thread. 4 tab chức năng.
-2. **Tầng Điều khiển (SimBridge):** Thread riêng, xử lý lệnh từ HMI và điều phối 3 chế độ.
+1. **Tầng Giao diện (HMI):** PyQt5, chạy trên Main Thread. 4 tab chức năng + 2 panel phụ.
+2. **Tầng Điều khiển (SimBridge):** QThread riêng chạy ở 240Hz, xử lý lệnh từ HMI qua command_queue và trả kết quả qua state_queue. Điều phối 3 chế độ: Manual, Auto (FSM), AI (SAC).
 3. **Tầng Thuật toán:** FK/IK Solver, Trajectory Planner, FSM Controller, SAC Agent.
 4. **Tầng Vật lý (PyBullet):** Mô phỏng 240Hz, collision detection, constraint-based gripper.
+
+#### Giao diện HMI (hmi/)
+| Tab / Panel | File | Chức năng |
+|---|---|---|
+| Joint Panel | `joint_panel.py` | 6 thanh trượt điều khiển từng góc khớp q1-q6 |
+| Cartesian Panel | `cartesian_panel.py` | Nhập XYZ + RPY, nút Jog ±1cm từng trục |
+| Trajectory Panel | `trajectory_panel.py` | Tạo waypoints, chọn Joint/Cartesian, điều chỉnh tốc độ |
+| Auto Panel | `auto_panel.py` | Start/Stop FSM, hiển thị 11 trạng thái + cycle count |
+| AI Panel | `ai_panel.py` | Start/Stop SAC, hiển thị success count |
+| Status Panel | `status_panel.py` | Real-time: XYZ, 6 góc khớp, gripper, chế độ |
+| Log Panel | `log_panel.py` | Console log sự kiện: IK, lỗi, AI reward |
+
+#### SimBridge — Cầu nối HMI ↔ PyBullet (hmi/sim_bridge.py)
+- Chạy trên QThread riêng ở 240Hz, độc lập với UI thread để không gây lag.
+- Nhận lệnh từ GUI qua `command_queue` (set_joints, jog_cartesian, start_auto, start_ai...).
+- Trả trạng thái qua `state_queue` mỗi 24 steps (~10Hz): tọa độ EE, góc khớp, gripper, mode.
+- Load SAC model khi khởi tạo, tự phát hiện 17D/20D model + VecNormalize stats.
+
+### 3.1.1 Chuyển đổi Hệ tọa độ (utils/transforms.py)
+Robot UR5e trong PyBullet bị **xoay 180°** quanh trục Z so với hệ DH chuẩn, và đế đặt trên bàn cao **0.42m**:
+- `local_to_world(pos, euler)`: Đảo dấu X,Y + cộng 0.42m vào Z + trừ π khỏi Yaw.
+- `world_to_local(pos, euler)`: Phép biến đổi ngược.
+- Gọi mỗi khi truyền tọa độ giữa FK/IK ↔ HMI/PyBullet.
+
+### 3.1.2 Giác hút Chân không (simulation/gripper.py)
+**Nguyên lý:** Trong thực tế, giác hút dùng bơm chân không tạo áp suất âm. Trong mô phỏng, dùng PyBullet Constraint loại `JOINT_FIXED` để "dán cứng" vật vào EE.
+
+- **Kích hoạt:** Tính offset vật so với EE trong hệ tọa độ cục bộ (Local Frame) bằng `invertTransform` + `multiplyTransforms`, sau đó tạo Constraint với `maxForce=500N`. Bước tính offset **cực kỳ quan trọng** — nếu không, vật bị kéo giật về tâm EE gây Physics Explosion.
+- **Nhả:** Xóa Constraint → vật rơi tự do theo trọng lực.
+- **Visual indicator:** Vẽ vòng tròn 3D quanh đầu hút — xanh lá (đang hút) / đỏ (đã nhả).
+
+### 3.1.3 Camera ảo — Raycast Detector (simulation/object_detector.py)
+- Bắn tia laser ảo từ EE thẳng xuống (trục Z âm), tầm xa 0.5m.
+- Nếu chạm vật → Vẽ tia xanh + trả về tọa độ (X,Y,Z) chính xác.
+- Nếu không chạm → Vẽ tia đỏ + trả về None.
+- Tính sẵn 3 tư thế gắp: Approach (trên vật 15cm), Pick (cách vật 1cm), Lift (trên vật 20cm).
+
+### 3.1.4 Curriculum Difficulty (simulation/environment.py)
+| Level | Bán kính spawn | Vật nằm ngang | Mô tả |
+|---|---|---|---|
+| 0 | 12-25cm từ HOME | Không | Dễ — vật đứng thẳng, gần tay |
+| 1 | 5-25cm từ HOME | 50% xác suất | Vừa — vật có thể lăn ngang |
+| 2 | Full WORK_ZONE | 50% xác suất | Khó — random hoàn toàn |
 
 ### 3.2 Chế độ Manual
 - Người dùng điều khiển trực tiếp EE qua giao diện HMI.
@@ -208,39 +281,76 @@ PHA 2 — PLACE:
   - Dense reward hạ chính xác: max(0, 3.0 − dist_3d × 10.0)
   - Thưởng thả thành công vào bin: +500 → KẾT THÚC
 
-#### 3.4.4 Curriculum Learning (Học theo giáo trình)
+#### 3.4.4 Siêu tham số SAC (Hyperparameters)
+
+| Tham số | Phase 1 (Grasp) | Phase 2 (Place) | Ý nghĩa |
+|---|---|---|---|
+| learning_rate | 3e-4 | 3e-4 | Tốc độ học Adam |
+| gamma | 0.98 | 0.99 | Hệ số chiết khấu |
+| batch_size | 256 | 256 | Kích thước batch |
+| tau | 0.02 | 0.005 | Polyak averaging (Phase 2 ổn định hơn) |
+| buffer_size | 300,000 | 1,000,000 | Replay buffer |
+| learning_starts | 10,000 | 10,000 | Warm-up exploration |
+| gradient_steps | 1 | 1 | Gradient updates/step |
+| ent_coef | auto_0.1 | auto_0.1 | Entropy tự điều chỉnh |
+| net_arch | [256, 256, 256] | [256, 256] | Kiến trúc Actor/Critic |
+| use_sde | True | False | State-Dependent Exploration |
+
+#### 3.4.5 Curriculum Learning (Học theo giáo trình)
 
 **Phase 1 — Học Gắp (train_17d_grasp.py):**
 - Mục tiêu: Chỉ học tiếp cận + kích hoạt giác hút. Không cần mang tới bin.
 - Observation: 17D (giữ 17D để transition sang Phase 2 không bị lệch dimension).
 - Action: 7D — action[6] điều khiển gripper trực tiếp (chưa dùng Hybrid Gripper).
 - Reward: phạt khoảng cách (−dist × 2.0) + thưởng nâng (height × 10.0) + bonus +200 khi gắp & nâng 15cm.
+- MAX_STEPS = 150 (ngắn, buộc AI học nhanh).
 - Training: ~3 triệu steps, 4 envs, ~1 tiếng. Kết quả: 100% success rate.
 
 **Phase 2 — Học Pick & Place (train_17d_place.py):**
 - Observation nâng lên 20D (thêm 3D EE euler để giám sát tư thế cổ tay).
+- MAX_STEPS = 300 (~12.5 giây simulation).
 - Đột phá 1 — Hybrid Gripper: AI KHÔNG điều khiển gripper, chỉ học navigation. Gripper tự gắp/nhả theo Phase. Loại bỏ hoàn toàn Reward Hacking.
-- Đột phá 2 — Physics-Level Euler Clamp (±15°): Thay vì thiết kế hàm phạt góc nghiêng phức tạp, clamp trực tiếp trong môi trường vật lý. AI luôn giữ tư thế thẳng đứng công nghiệp.
-- VecNormalize: Chuẩn hóa observation (mean=0, std=1) và reward tự động, giúp hội tụ ổn định.
-- Training: 10 triệu steps, 16 parallel envs, ~3 tiếng trên Core i7, 16GB RAM.
+- Đột phá 2 — Physics-Level Euler Clamp (±15°): Trong hàm `move_ee_cartesian()`, Roll được kẹp quanh ±π (±15°), Pitch kẹp quanh 0 (±15°). AI luôn giữ tư thế thẳng đứng công nghiệp mà không cần hàm phạt phức tạp.
+- VecNormalize: Chuẩn hóa observation (mean=0, std=1) và reward tự động (`clip_obs=10, clip_reward=10`).
+- Training: 10 triệu steps, 16 parallel envs (SubprocVecEnv), ~3 tiếng trên Core i7, 16GB RAM.
 - Tốc độ: ~600 FPS (nhờ song song hóa 16 luồng CPU).
+- EvalCallback: Đánh giá mỗi 200K steps, 20 episodes, lưu best_model.zip + vecnormalize.pkl khớp nhau.
 
-#### 3.4.5 Safety Layers (Lớp bảo vệ khi Inference)
-- **Jam Detector:** Nếu EE đứng yên > ~3.3 giây (200 frames) → tự động release gripper + quay về HOME.
-- **Workspace Validator:** Clip tọa độ EE vào giới hạn an toàn.
-- **Dwell Time (0.5s):** Dừng nhịp sau khi gắp, mô phỏng thời gian bơm áp suất chân không.
-- **Retract Logic:** Sau khi thả xong → nâng tay lên → về HOME bằng Joint interpolation.
+#### 3.4.6 Safety Layers (Lớp bảo vệ khi Inference)
+- **Jam Detector:** Nếu EE di chuyển < 2mm trong 200 frames liên tiếp (~3.3 giây) → release gripper + Auto-Home (Phase 3→4: nâng lên → về HOME bằng Joint interpolation). Vật thể KHÔNG bị xóa → AI thử lại.
+- **Timeout Detector:** Nếu AI chưa gắp được vật sau 600 frames (~10 giây) → tự động về HOME rồi thử lại. Đếm số lần retry.
+- **Workspace Validator:** Clip tọa độ EE vào giới hạn an toàn (X: 0.20-0.75m, Y: -0.30-0.30m, Z: 0.44-0.95m). Bỏ qua validator trong AI mode (robot cần bay vào vùng bin).
+- **Dwell Time (0.5s):** Dừng nhịp 15 frames sau khi gắp, mô phỏng thời gian bơm áp suất chân không.
+- **Retract Logic (2 pha):** Pha 1: Kéo thẳng EE lên trời (Z > 0.25m) thoát thành thùng. Pha 2: Nội suy Joint Space đưa tay về HOME_POSE (tốc độ 5%/frame). Khi error < 0.05 rad → spawn vật mới.
+- **Anti-Unwinding:** Normalize góc IK về [-2π, 2π], chọn góc tương đương gần nhất với joint hiện tại để tránh robot quấn tay nhiều vòng.
 
 ---
 
 ## CHƯƠNG 4: TRIỂN KHAI & KẾT QUẢ
 
 ### 4.1 Môi trường mô phỏng
+**Cấu hình vật lý:**
 - PyBullet 240 Hz, GUI với camera 3D có thể xoay.
-- Bàn gỗ (0.42m cao), bin thùng rác (4 thành + 1 đáy), vật cylinder xanh dương.
-- Robot UR5e load từ URDF chuẩn, 6 khớp quay với PD controller.
-- Gripper mô phỏng bằng JOINT_FIXED constraint, khoảng cách gắp < 4.5cm.
-- Workspace đánh dấu bằng đường viền đỏ trên mặt bàn.
+- Trọng lực: g = −9.81 m/s². Real-time simulation OFF (step-by-step để kiểm soát hoàn toàn).
+
+**Địa hình:**
+- Bàn gỗ: mặt bàn ở Z = 0.42m (chân 0.40m + dày 0.02m), lateral friction = 1.0.
+- Bin thùng rác: 4 thành + 1 đáy, tâm tại [0.65, −0.28, 0.42m], kích thước nửa 9.6×7.1cm.
+- Vật cylinder xanh dương: bán kính 2cm, chiều cao 6cm, khối lượng 100g, lateral friction = 0.8.
+- Workspace đánh dấu bằng đường viền đỏ trên mặt bàn (WORK_ZONE: X 0.3-0.7m, Y −0.15-0.15m).
+
+**Robot:**
+- UR5e load từ URDF chuẩn (ur5e_final.urdf), 6 khớp quay.
+- PD controller: Kp = 0.2–0.3, Kd = 0.8–1.0, max force 28–150N tùy khớp.
+- HOME_POSE: [0, −π/2, π/2, −π/2, −π/2, 0] rad.
+- Gripper mô phỏng bằng JOINT_FIXED constraint, khoảng cách gắp < 4.5cm, maxForce = 500N.
+
+**AI Inference Pipeline (khi chạy HMI):**
+1. Load `best_model.zip` + `vecnormalize.pkl` (phải khớp nhau).
+2. Mỗi step: thu thập 20D obs → normalize → SAC predict → action 7D → `move_ee_cartesian()` + Hybrid Gripper logic.
+3. Hybrid Gripper: Phase 0 — tự gắp khi < 4.5cm | Phase 1 — giữ chặt | Phase 2 — tự nhả khi gần bin.
+4. Check `is_in_bin()`: vật nằm trong 5cm từ tâm bin + Z < 0.55m → success.
+5. Retract: nâng lên → về HOME → spawn vật mới → lặp lại vô hạn.
 
 ### 4.2 Kết quả Training
 **Phase 1 (Grasp):**
