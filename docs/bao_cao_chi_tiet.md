@@ -124,36 +124,28 @@ Bài toán ngược: tìm 6 góc khớp [q1...q6] khi biết vị trí (x,y,z) v
 - Ghép các góc khớp thành Joint Trajectory liên tục.
 - Ưu điểm: EE di chuyển theo đường thẳng chính xác (quan trọng khi tiếp cận vật theo trục Z).
 
-### 2.3 Học Tăng Cường (Reinforcement Learning)
+### 2.3 Điều Hướng Tự Động Bằng Học Tăng Cường (RL)
+
+Thay vì sử dụng các thuật toán nội suy quỹ đạo Cartesian/Joint cứng nhắc (như trình bày ở phần 2.2), hệ thống được tích hợp Học Tăng Cường để tay máy có thể tự "mò đường" (Navigate) một cách linh hoạt trong không gian 3D, đặc biệt khi vật thể bị xê dịch khỏi tọa độ cho trước.
 
 #### 2.3.1 Khái niệm cơ bản
-Học Tăng Cường là phương pháp học máy trong đó Agent tương tác với Môi trường (Environment) theo vòng lặp:
-1. Agent quan sát trạng thái s_t từ môi trường.
-2. Agent chọn hành động a_t theo chính sách π(a|s).
-3. Môi trường trả về phần thưởng r_t và trạng thái mới s_{t+1}.
-4. Agent cập nhật chính sách để tối đa hóa tổng phần thưởng tương lai.
+Học Tăng Cường xem thuật toán AI như một Blackbox (Agent) tương tác với Môi trường Vật lý (Environment):
+1. Agent quan sát trạng thái (State) từ các cảm biến/tọa độ.
+2. Agent xuất tín hiệu điều khiển (Action) xuống các khớp động cơ.
+3. Môi trường kiểm tra va chạm, sai số và trả về Điểm thưởng/phạt (Reward).
+4. Agent tự động cập nhật mạng nơ-ron để tối đa hóa điểm số.
 
-#### 2.3.2 Soft Actor-Critic (SAC)
-SAC là thuật toán Off-Policy thuộc họ Actor-Critic, tối ưu hóa entropy-regularized objective:
+#### 2.3.2 Ứng dụng Thuật toán Soft Actor-Critic (SAC)
+SAC là thuật toán Off-Policy thuộc họ Actor-Critic. Thay vì đi sâu vào kiến trúc toán học phức tạp của mạng nơ-ron, đồ án tập trung khai thác các đặc tính cơ điện tử của thuật toán này:
 
-π* = argmax_π E[Σ γ^t (r_t + α H(π(·|s_t)))]
+**Tại sao chọn SAC cho Robot UR5e?**
+- **Continuous Action (Hành động liên tục):** Khác với các AI xử lý logic dạng rời rạc (lên/xuống/trái/phải), SAC xuất ra dải giá trị số thực liên tục. Điều này cực kỳ phù hợp để làm tín hiệu cấp cho các bộ PID nội suy góc xoay động cơ servo, giúp cánh tay di chuyển trơn tru, không giật cục.
+- **Sample-efficient:** Khả năng tận dụng lại dữ liệu cũ giúp robot học nhanh hơn nhiều so với thuật toán On-Policy thông thường.
+- **Tự cân bằng Khám phá:** Robot không bao giờ đi đúng một đường cố định mà luôn lân la tìm quỹ đạo bay ngắn và mượt hơn (nhờ cơ chế Entropy).
 
-Trong đó:
-- γ: hệ số chiết khấu (discount factor) = 0.99
-- α: hệ số entropy, tự điều chỉnh (auto-tuning)
-- H(π): entropy của chính sách — khuyến khích đa dạng hành động
-
-**Tại sao chọn SAC?**
-- Không gian hành động liên tục → loại DQN (chỉ discrete).
-- Sample-efficient hơn PPO 5-10 lần (ít data, hội tụ nhanh hơn).
-- Entropy regularization → tự cân bằng exploit/explore, ổn định hơn DDPG.
-- Đã được chứng minh hiệu quả trong robot manipulation (Haarnoja et al., 2018).
-
-**Kiến trúc mạng:**
-- Actor Network: MLP [256 → 256] → Action (7D)
-- Critic 1: MLP [256 → 256] → Q-value
-- Critic 2: MLP [256 → 256] → Q-value (twin critic chống overestimation)
-- Entropy coef: tự điều chỉnh từ giá trị khởi tạo 0.1
+**Kiến trúc mạng điều hướng:**
+- **Mạng Actor (Quyết định):** Nhận đầu vào là tọa độ không gian → Xuất ra vector vận tốc 7 chiều (ΔXYZ, ΔRPY).
+- **Mạng Critic (Chấm điểm):** Đánh giá xem quỹ đạo bay đó có an toàn và tối ưu không.
 
 ---
 
@@ -233,7 +225,7 @@ IDLE → DETECT → APPROACH → DESCEND → PICK → LIFT → MOVE_TO_BIN → P
 
 Timeout mỗi state: 15 giây. Nếu quá thời gian → ERROR.
 
-### 3.4 Chế độ AI (SAC Reinforcement Learning)
+### 3.4 Chế độ AI (Tự động điều hướng linh hoạt)
 
 #### 3.4.1 Không gian Quan sát (Observation — 20D)
 | Index | Ý nghĩa | Chiều |
