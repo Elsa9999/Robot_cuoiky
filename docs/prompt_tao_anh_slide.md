@@ -1,64 +1,64 @@
 # DANH SÁCH PROMPT TẠO SLIDE HOÀN CHỈNH (CÓ TIẾNG VIỆT & BẢNG BIỂU)
-*Lưu ý quan trọng: Các công cụ tạo ảnh (như DALL-E 3, Midjourney, Nano Banana) thường viết sai chính tả khi sinh ra quá nhiều chữ hoặc vẽ bảng biểu phức tạp. Tuy nhiên, dưới đây là các prompt chi tiết nhất, ép AI thiết kế bố cục slide hoàn chỉnh, chứa đúng chữ Tiếng Việt, tên Robot (UR5e), môi trường (PyBullet) và vẽ cả bảng/sơ đồ để bạn dùng làm Slide trực tiếp.*
+*Lưu ý: Bộ prompt tạo ảnh này đã được đồng bộ chuẩn khớp 100% với file `kich_ban_slide.md`. Slide 2 là Mục Lục. Tổng cộng đúng 20 Slides.*
 
 ---
 
-**Slide 1: Tiêu đề (Mở đầu)**
-> **Prompt:** A modern, high-tech presentation slide. Background: A photorealistic UR5e robotic arm on a clean desk. Center text in bold, large, clear typography: "HỆ THỐNG ĐIỀU KHIỂN & MÔ PHỎNG ROBOT UR5E". Subtitle text below: "Môi trường: PyBullet | Thuật toán: Soft Actor-Critic". Bottom text: "Trình bày: Sinh viên thực hiện". The text must be perfectly readable, glowing white on a dark cinematic background.
+**Slide 1: Trang bìa**
+> **Prompt:** A professional presentation slide. The background is a clean, crisp architectural blueprint on light grey grid paper. The main illustration on the right is a Universal Robots UR5e arm drawn in dark blue technical lines. CRITICAL INSTRUCTION: The end-effector of the robot arm MUST be a single, flat, round vacuum suction cup pointing downwards. DO NOT draw 2-finger grippers. On the left side, top title text in bold: "MÔ PHỎNG TAY MÁY UR5E TRÊN PYBULLET". Subtitle text: "Ứng dụng Học Tăng Cường (Reinforcement Learning)". Bottom left box: "Sinh viên: Nguyễn Tuấn Anh\nGVHD: TS. Lê Trọng Đạt". Perfect Vietnamese text.
 
-**Slide 2: Đặt vấn đề**
-> **Prompt:** A professional presentation slide layout. Background: A chaotic industrial conveyor belt with scattered objects. Top title in bold Vietnamese: "SLIDE 2: ĐẶT VẤN ĐỀ". On the left, bullet points in Vietnamese text: "- Thao tác gắp đặt phức tạp", "- Robot UR5e khó định hướng", "- Lập trình quỹ đạo thủ công dễ lỗi". Clean white text over a dark, blurred background.
+**Slide 2: Mục lục**
+> **Prompt:** A highly professional presentation slide layout for an Agenda. Title text: "SLIDE 2: NỘI DUNG TRÌNH BÀY". Left side text: "1. Đặt vấn đề & Mục tiêu", "2. Cơ sở lý thuyết", "3. Thiết kế hệ thống", "4. Chế độ Auto (FSM)", "5. Chế độ AI (SAC)", "6. Kết quả & Demo". Right side: an abstract glowing holographic blueprint of a robotic arm. Dark tech theme, glowing cyan text.
 
-**Slide 3: Mục tiêu Đồ án**
-> **Prompt:** A sleek presentation slide. Background: A UR5e robotic arm with half mechanical gears and half glowing neural network nodes. Top title text: "SLIDE 3: MỤC TIÊU ĐỒ ÁN". Left side text: "- Mô phỏng tay máy UR5e", "- Tích hợp Auto FSM", "- Triển khai AI SAC", "- So sánh hiệu năng". Modern corporate design, high contrast readable Vietnamese text.
+**Slide 3: Đặt vấn đề**
+> **Prompt:** A presentation slide layout. Background: A chaotic industrial conveyor belt. Top title: "SLIDE 3: ĐẶT VẤN ĐỀ". Left text: "- Thao tác gắp đặt phức tạp", "- Robot UR5e khó định hướng", "- Lập trình quỹ đạo thủ công dễ lỗi". Below, a flowchart: "[TRUYỀN THỐNG: Cứng nhắc] VS [HỌC TĂNG CƯỜNG: Linh hoạt]". Clean white text over dark background.
 
-**Slide 4: Phạm vi & Môi trường**
-> **Prompt:** A tech presentation slide. Background: A PyBullet 3D physics simulation showing a robot and a blue bin. Title text: "SLIDE 4: PHẠM VI & MÔI TRƯỜNG". A simple table drawn on the slide with 2 columns. Column 1 reads: "Công cụ", "Robot", "Môi trường". Column 2 reads: "Python & PyTorch", "Universal Robots UR5e", "PyBullet 240Hz". Glowing cyan text, cyberpunk HUD style.
+**Slide 4: Mục tiêu Đồ án**
+> **Prompt:** A sleek presentation slide. Top title text: "SLIDE 4: MỤC TIÊU ĐỒ ÁN". Left side text bullet points: "- Mô phỏng 3D UR5e (PyBullet)", "- Lập trình FK/IK chuẩn DH", "- 3 chế độ: Manual, Auto, AI", "- Train AI bằng SAC", "- Giao diện HMI (PyQt5)". Background: UR5e arm with half gears, half glowing neural nodes.
 
 **Slide 5: Công nghệ áp dụng**
-> **Prompt:** A slide design. Background: Glowing neon logos of Python, PyTorch, and PyQt5 floating around a UR5e robot. Top title text: "SLIDE 5: CÔNG NGHỆ ÁP DỤNG". Three large text boxes displaying: "Python (Lõi xử lý)", "Stable-Baselines3 (SAC AI)", "PyQt5 (Giao diện HMI)". Tech presentation style, dark mode, highly readable text.
+> **Prompt:** A slide design. Top title text: "SLIDE 5: CÔNG NGHỆ SỬ DỤNG". Draw a highly professional 2-column table. Column 1: "Thành phần". Column 2: "Công nghệ". Rows: "Ngôn ngữ | Python 3.10", "Vật lý | PyBullet", "Giao diện | PyQt5", "AI RL | Stable-Baselines3", "Deep Learning | PyTorch". Background: Glowing neon logos floating around.
 
 **Slide 6: Kiến trúc Tổng thể**
-> **Prompt:** A presentation slide featuring a 4-layer architecture diagram. Top title text: "SLIDE 6: KIẾN TRÚC TỔNG THỂ". Draw 4 floating glowing boxes stacked vertically. Text inside boxes from top to bottom: "1. Giao diện PyQt5", "2. Điều khiển SimBridge", "3. Thuật toán SAC & FSM", "4. Mô phỏng PyBullet". Bright, professional isometric diagram layout.
+> **Prompt:** A presentation slide. Top title: "SLIDE 6: KIẾN TRÚC TỔNG THỂ". Draw 4 floating glowing boxes stacked vertically connected by data arrows. Text in boxes top to bottom: "HMI (PyQt5)", "SimBridge (Thread)", "SAC RL Agent & FSM", "PyBullet Physics (240Hz)". Bright isometric diagram layout.
 
 **Slide 7: Động học Thuận (FK)**
-> **Prompt:** A blueprint-style presentation slide. Background: Denavit-Hartenberg coordinate frames on a UR5e robot arm. Title text: "SLIDE 7: ĐỘNG HỌC THUẬN". Draw a table with columns: "Khớp", "a", "d", "alpha". Rows showing numbers like "0.089", "0.425". Next to the table, text: "Thông số chuẩn UR5e DH". Blue engineering blueprint background, crisp white text.
+> **Prompt:** A blueprint-style presentation slide. Title text: "SLIDE 7: ĐỘNG HỌC THUẬN (FK)". Draw a table: columns "Khớp", "a", "d", "alpha". Rows with technical numbers. Next to it, text: "Quy ước Denavit-Hartenberg", "T_EE = T1 x T2 x T3 x T4 x T5 x T6". Background: UR5e robot with XYZ coordinate vectors.
 
 **Slide 8: Động học Nghịch (IK)**
-> **Prompt:** A presentation slide. Top title: "SLIDE 8: ĐỘNG HỌC NGHỊCH". Background: A UR5e robot reaching a target point. Text bullet points: "- Bộ giải Hybrid 2 lớp", "- Giải tích hình học (<1ms)", "- Tối ưu L-BFGS-B Numerical". Modern, sleek text layout, glowing mathematical formulas in the background.
+> **Prompt:** A presentation slide. Title: "SLIDE 8: ĐỘNG HỌC NGHỊCH (IK)". Text bullet points: "- BÀI TOÁN NGƯỢC: Tìm góc khớp", "- BỘ GIẢI HYBRID 2 LỚP", "- Lớp 1: Giải tích hình học (<1ms)", "- Lớp 2: SciPy L-BFGS-B Numerical". Background: UR5e robot reaching a target, math formulas floating.
 
 **Slide 9: Quy hoạch Quỹ đạo**
-> **Prompt:** A presentation slide. Title text: "SLIDE 9: QUY HOẠCH QUỸ ĐẠO". Draw a trapezoidal velocity profile graph. Graph labels in Vietnamese: "Vận tốc", "Thời gian". Text next to graph: "- Quỹ đạo Robot UR5e", "- Joint Space: Hình thang", "- Cartesian: Tịnh tiến thẳng". Professional charts, dark theme.
+> **Prompt:** A presentation slide. Title: "SLIDE 9: QUY HOẠCH QUỸ ĐẠO". Draw a trapezoidal velocity profile graph. Labels: "Vận tốc", "Thời gian". Text next to graph: "- Joint Space: Nội suy hình thang", "- Cartesian Space: Nội suy đường thẳng". Professional charts, dark industrial theme.
 
 **Slide 10: Chế độ Auto (FSM)**
-> **Prompt:** A presentation slide. Title text: "SLIDE 10: CHẾ ĐỘ AUTO FSM". Draw a flowchart diagram with arrows connecting glowing boxes. Text in boxes: "IDLE", "APPROACH", "DESCEND", "PICK", "PLACE". Text below: "11 trạng thái điều khiển UR5e. Tỉ lệ thành công 100%". Clear, logical flowchart design, neon blue borders.
+> **Prompt:** A presentation slide. Title: "SLIDE 10: CHẾ ĐỘ AUTO (FSM)". Draw a flowchart diagram with arrows. Boxes: "APPROACH -> DESCEND -> PICK -> LIFT -> PLACE". Text below: "11 trạng thái tuần tự. Timeout 15s. Tỉ lệ 100%". Clear, logical flowchart design, neon borders.
 
 **Slide 11: Ứng dụng AI Điều hướng**
-> **Prompt:** A modern presentation slide. Title text: "SLIDE 11: AI ĐIỀU HƯỚNG (SAC)". Background: UR5e robot holding an artificial brain. Bullet points text: "- Thuật toán Soft Actor-Critic", "- Action liên tục cho PyBullet", "- Mạng Actor (Quyết định)", "- 2 Mạng Critic (Chấm điểm)". High tech font, clear layout.
+> **Prompt:** A presentation slide. Title: "SLIDE 11: ỨNG DỤNG AI ĐIỀU HƯỚNG". Text: "- Thuật toán Soft Actor-Critic (SAC)", "- Action liên tục (Continuous)", "- Actor Network: Ra quyết định bay", "- Critic Network: Chấm điểm an toàn". Background: UR5e robot holding a glowing neural network brain.
 
-**Slide 12: Cơ chế Hybrid Gripper & Physics Clamp**
-> **Prompt:** A presentation slide. Title text: "SLIDE 12: HYBRID GRIPPER & PHYSICS CLAMP". Split layout. Left text: "Hybrid Gripper: Cảm biến PyBullet tự hút/nhả". Right text: "Physics Clamp: Ép khớp cổ tay UR5e thẳng 90 độ". Background: macro shot of a robot gripper with a lock icon.
+**Slide 12: Hybrid Gripper & Physics Clamp**
+> **Prompt:** A presentation slide. Title: "SLIDE 12: ĐỘT PHÁ CƠ ĐIỆN TỬ". Left text: "Hybrid Gripper: Cảm biến PyBullet tự hút/nhả". Right text: "Physics Clamp: Ép khớp cổ tay UR5e thẳng 90 độ". Background: macro shot of a robot vacuum gripper with a glowing lock icon.
 
 **Slide 13: Observation & Action**
-> **Prompt:** A presentation slide. Title text: "SLIDE 13: OBSERVATION & ACTION". Draw two tables. Table 1 Header: "Observation (20D)". Rows: "Tọa độ UR5e", "Vị trí vật", "Góc Euler". Table 2 Header: "Action (7D)". Rows: "Dịch chuyển XYZ", "Xoay cổ tay RPY". Clean, perfectly aligned minimalist tables.
+> **Prompt:** A presentation slide. Title: "SLIDE 13: OBSERVATION & ACTION". Draw two tables. Table 1: "Observation (20D)" with rows "Tọa độ UR5e", "Vị trí vật", "Quaternion". Table 2: "Action (7D)" with rows "Vận tốc XYZ", "Vận tốc xoay RPY". Perfectly aligned minimalist tables.
 
 **Slide 14: Thiết kế Hàm Reward**
-> **Prompt:** A presentation slide. Title text: "SLIDE 14: THIẾT KẾ HÀM REWARD". Draw 3 clear boxes representing phases. Box 1 text: "PHA 0: Tới gần vật". Box 2 text: "PHA 1: Nâng UR5e lên 20cm". Box 3 text: "PHA 2: Thả vào thùng rác (+500)". Background: Gamified popup scoring style, glowing green numbers.
+> **Prompt:** A presentation slide. Title: "SLIDE 14: THIẾT KẾ HÀM REWARD". Draw 3 clear boxes. Box 1: "PHA 0: Tới gần vật". Box 2: "PHA 1: Nâng cao 20cm". Box 3: "PHA 2: Thả vào Bin (+500)". Text below: "Giải quyết bài toán Reward Hacking". Background: Gamified popup scoring style (+500).
 
-**Slide 15: Quá trình Training**
-> **Prompt:** A presentation slide. Title text: "SLIDE 15: QUÁ TRÌNH TRAINING SAC". Bullet points text: "- Mô phỏng PyBullet 240Hz", "- 10 Triệu Steps", "- 16 Môi trường song song", "- Thời gian: 3 tiếng". Background: Grid of multiple ghost robotic arms training simultaneously. Clean infographic layout.
+**Slide 15: Training SAC**
+> **Prompt:** A presentation slide. Title: "SLIDE 15: TRAINING TỐI ƯU HÓA SAC". Text: "- Kịch bản 1: Curriculum Learning", "- Kịch bản 2: Train 1 phase duy nhất". Background: PyTorch loss graphs and a 3D robot learning. Clean infographic layout.
 
 **Slide 16: Kết quả Training**
-> **Prompt:** A presentation slide. Title text: "SLIDE 16: KẾT QUẢ TRAINING UR5E". Draw a large, simple table. Columns: "Tiêu chí", "Kết quả". Rows: "Thành công", "100%", "Tốc độ PyBullet", "600 FPS", "Tư thế", "Thẳng đứng 90 độ". A massive glowing "100% SUCCESS" badge in the corner. Highly polished presentation style.
+> **Prompt:** A presentation slide. Title: "SLIDE 16: KẾT QUẢ TRAINING UR5E". Draw a table. Columns: "Tiêu chí", "Kết quả". Rows: "Thành công", "100%", "Steps", "10 Triệu", "Thời gian", "3 tiếng". A massive glowing "100% SUCCESS" badge in the corner. Highly polished presentation style.
 
 **Slide 17: So sánh FSM vs AI**
-> **Prompt:** A presentation slide with a split-screen layout. Title text: "SLIDE 17: SO SÁNH AUTO VÀ AI". Left side title: "Auto (FSM)". Left text: "Lập trình quỹ đạo UR5e cứng nhắc". Right side title: "AI (SAC)". Right text: "Mạng Nơ-ron tự tìm đường". High contrast, professional comparative layout.
+> **Prompt:** A split-screen slide layout. Title: "SLIDE 17: SO SÁNH AUTO VÀ AI". Left side title: "Auto (FSM)". Left text: "Cứng nhắc, báo lỗi nếu vật lệch". Right side title: "AI (SAC)". Right text: "Tự tìm đường linh hoạt, không cần code quỹ đạo". High contrast comparative layout.
 
 **Slide 18: Demo Phần mềm**
-> **Prompt:** A presentation slide. Title text: "SLIDE 18: DEMO TRỰC TIẾP HMI". Background: A highly detailed desktop software interface showing PyBullet UR5e. Large callout text: "Chế độ: Manual - Auto - AI". Professional UI/UX presentation mockup.
+> **Prompt:** A presentation slide. Title: "SLIDE 18: DEMO TRỰC TIẾP". Background: A highly detailed desktop HMI software interface showing PyBullet UR5e. Large text: "PyQt5 Control Panel". Professional UI/UX presentation mockup.
 
 **Slide 19: Hạn chế & Hướng phát triển**
-> **Prompt:** A presentation slide. Title text: "SLIDE 19: HẠN CHẾ & HƯỚNG PHÁT TRIỂN". Left side text: "Hiện tại: Tọa độ ảo từ PyBullet". Right side text: "Tương lai: Camera RealSense, Sim-to-Real sang UR5e thật". Background: UR5e robot looking into a real camera lens.
+> **Prompt:** A presentation slide. Title: "SLIDE 19: HẠN CHẾ & HƯỚNG PHÁT TRIỂN". Left text: "Hạn chế: Chưa dùng camera thật". Right text: "Tương lai: Camera RealSense, Sim-to-Real sang UR5e thật". Background: UR5e robot looking into a real camera lens.
 
 **Slide 20: Lời Cảm ơn**
-> **Prompt:** A final presentation slide. Large center title text: "XIN CHÂN THÀNH CẢM ƠN". Subtitle text: "Đồ án: Mô phỏng UR5e và AI". Background: A robotic arm politely bowing and handing a digital flower. Warm lighting, polite and professional closing slide.
+> **Prompt:** A final presentation slide. Large center text: "XIN CHÂN THÀNH CẢM ƠN". Subtitle: "GVHD: TS. Lê Trọng Đạt & Quý Hội Đồng". Background: A robotic arm politely bowing and handing a digital flower. Warm lighting.
