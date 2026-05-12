@@ -5,7 +5,7 @@
 ---
 
 ## SLIDE 1 — TRANG BÌA
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - Tên đề tài: "Hệ thống Điều khiển & Mô phỏng Robot UR5e — Ứng dụng Học Tăng Cường cho bài toán Pick & Place"
 - Họ tên sinh viên
 - GVHD
@@ -17,7 +17,7 @@
 ---
 
 ## SLIDE 2 — NỘI DUNG TRÌNH BÀY
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 1. Đặt vấn đề & Mục tiêu
 2. Cơ sở lý thuyết (FK, IK, RL)
 3. Thiết kế hệ thống
@@ -29,7 +29,7 @@
 ---
 
 ## SLIDE 3 — ĐẶT VẤN ĐỀ
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - Robot cộng tác (Cobot) cần thực hiện thao tác Pick & Place trong sản xuất
 - Thách thức: vật thể nằm ngẫu nhiên, cần tính quỹ đạo tránh va chạm, 6 bậc tự do
 - Câu hỏi nghiên cứu: "Liệu AI (RL) có thể tự học điều khiển Cobot Pick & Place mà không cần lập trình cứng quỹ đạo?"
@@ -73,7 +73,7 @@
 ---
 
 ## SLIDE 6 — KIẾN TRÚC HỆ THỐNG
-**Nội dung:** Sơ đồ block diagram
+**Nội dung hiển thị trên Slide (TỐI GIẢN):** Sơ đồ block diagram
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -95,7 +95,7 @@
 ---
 
 ## SLIDE 7 — ĐẶT TRỤC VÀ BẢNG DH
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - Thiết lập hệ trục tọa độ XYZ tại từng khớp theo đúng quy tắc Standard Denavit-Hartenberg (DH Chuẩn).
 - Trích xuất bảng tham số cấu trúc (a, d, α) dựa trên tài liệu chuẩn (Hawkins 2013, Andersen 2018) và đối chiếu khớp 100% với file thiết kế `ur5e.urdf` của hãng.
 - **Lưu ý hội đồng:** Các thông số a4, a5, a6 = 0 vì cụm cổ tay của UR5e là Spherical Wrist (các trục cắt nhau tại 1 điểm, không có khoảng cách vuông góc chung).
@@ -107,7 +107,7 @@
 ---
 
 ## SLIDE 8 — ĐỘNG HỌC THUẬN (FK) & KIỂM CHỨNG
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - **Giải thuật:** Nhân liên tiếp 6 ma trận biến đổi thuần nhất 4x4.
 - Công thức: T_EE = T1 x T2 x T3 x T4 x T5 x T6
 - **Code Python:** Viết hàm `forward_kinematics(q)` sử dụng thư viện `NumPy` để tính toán ma trận T cực nhanh.
@@ -122,7 +122,7 @@
 ---
 
 ## SLIDE 9 — ĐỘNG HỌC NGHỊCH (IK) & KIỂM CHỨNG
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - Bài toán: biết vị trí (x,y,z) và hướng cần vươn tới → tìm 6 góc quay [q1...q6]
 - **Giải pháp:** Xây dựng Hybrid Solver 2 lớp cực kỳ tối ưu:
   - **Lớp 1:** Analytical (giải tích) → tốc độ < 1ms, đưa ra 8 nghiệm. Tự động chọn nghiệm ít phải xoay khớp nhất.
@@ -149,7 +149,7 @@ Input (xyz, euler) → Analytical Solver
 ---
 
 ## SLIDE 10 — QUY HOẠCH QUỸ ĐẠO
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - **Joint Space (Không gian khớp):** Nội suy mượt mà các góc khớp để robot không bị giật. Sử dụng Trapezoidal Velocity Profile (Đồ thị vận tốc hình thang).
 - **Cartesian Space (Không gian làm việc):** Nội suy đường thẳng XYZ, gọi IK liên tục tại mỗi điểm trung gian để ghép thành quỹ đạo mượt (Joint Traj).
 - Đảm bảo giới hạn vận tốc tối đa (v_max) và gia tốc tối đa (a_max).
@@ -169,10 +169,10 @@ velocity
 ---
 
 ## SLIDE 11 — CHẾ ĐỘ AUTO (FSM)
-**Nội dung:**
-- Máy trạng thái hữu hạn (Finite State Machine) gồm 11 bước tuần tự khép kín.
-- Mỗi state thực thi một quỹ đạo, hoàn thành sẽ tự động chuyển sang state tiếp theo.
-- **Tính an toàn:** Tích hợp Timeout 15s/state. Nếu robot bị kẹt (Jam Detector) hoặc chờ quá lâu → Tự động báo ERROR, không để motor gồng quá tải.
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
+- **FSM (Finite State Machine):** Gồm 11 state tuần tự khép kín.
+- **Quỹ đạo:** Mỗi state thực thi một quỹ đạo định trước.
+- **Fail-safe:** Timeout 15s/state + Jam Detector (Chống kẹt motor).
 
 **Hình ảnh:** Sơ đồ FSM:
 ```
@@ -184,14 +184,13 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ---
 
 ## SLIDE 12 — TẠI SAO CẦN AI (RL)?
-**Nội dung:**
-- **Hạn chế của Auto:** Chế độ Auto chạy theo quỹ đạo cố định (đường đi gấp khúc cứng nhắc). Nếu vật thể vô tình bị xê dịch trong lúc tay máy đang di chuyển, tay máy sẽ đi mù quáng đến vị trí cũ và gắp hụt.
-- **Giải pháp AI:** Nhóm chọn thuật toán Reinforcement Learning (Soft Actor-Critic - SAC) để thay thế khối FSM.
-- **Ưu điểm SAC:** Khả năng tự thích nghi theo thời gian thực (Real-time Adaptation). Nếu vật thể di chuyển, AI lập tức cập nhật "tầm nhìn" (Observation) và bẻ lái tự đuổi theo vật thể bằng một quỹ đạo cong mượt mà.
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
+- **Hạn chế Auto:** Quỹ đạo cứng nhắc. Dễ gắp hụt nếu vật thể xê dịch.
+- **Giải pháp:** Học tăng cường (Soft Actor-Critic - SAC).
+- **Ưu điểm AI:** Thích nghi thời gian thực (Real-time Adaptation). Tự động bẻ lái đuổi theo vật thể mượt mà.
 
 **Hình ảnh:** Sơ đồ vòng lặp Agent (SAC) ↔ Environment:
 ```
-       ┌──── Continuous Action (ΔXYZ, ΔRPY) ────►┐
        │                                         │
    [Actor SAC]                              [PyBullet]
        │                                         │
@@ -201,7 +200,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ---
 
 ## SLIDE 13 — CƠ CHẾ HYBRID VACUUM & PHYSICS CLAMP
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - Đặt vấn đề: Huấn luyện AI lái 6 bậc tự do (6-DoF) Pick & Place từ số 0 là vô cùng khó, AI hay bị "ngáo".
 - Để giải quyết, nhóm áp dụng **2 đột phá cơ điện tử**:
 - **Đột phá 1 (Hybrid Vacuum):** AI KHÔNG được quyền điều khiển bật/tắt giác hút chân không. Việc này giao cho cảm biến tiệm cận (cách <4.5cm thì hút). AI chỉ tập trung 100% vào việc "lái".
@@ -218,7 +217,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ---
 
 ## SLIDE 14 — OBSERVATION & ACTION SPACE
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 
 **Observation Space (20 차원 - 20D):**
 - Mắt AI nhìn thấy 20 thông số mỗi bước:
@@ -236,7 +235,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ---
 
 ## SLIDE 15 — THIẾT KẾ HÀM REWARD (Phần quan trọng nhất!)
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - Vấn đề: "Reward Hacking" — AI lợi dụng kẽ hở hàm thưởng để ăn điểm lặp đi lặp lại.
 - Giải pháp: **Phase-Based Reward** (Thưởng theo 3 Giai đoạn).
 
@@ -262,7 +261,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ---
 
 ## SLIDE 16 — QUÁ TRÌNH TRAINING (TRAIN TỪ SCRATCH)
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - Điểm khác biệt: **Train thẳng từ đầu (from scratch) trong 1 Phase duy nhất!**
 - Không sử dụng phương pháp Curriculum Learning (Chia nhỏ môi trường) phức tạp và tốn thời gian.
 - Tại sao làm được? Nhờ 3 đột phá đã trình bày: `Hybrid Vacuum` + `Physics Clamp` + `Phase-Based Reward` → Môi trường đã được cách ly rủi ro hoàn hảo.
@@ -283,7 +282,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ---
 
 ## SLIDE 17 — KẾT QUẢ TRAINING
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 
 | Metric | Kết Quả Đạt Được |
 |---|---|
@@ -298,7 +297,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ---
 
 ## SLIDE 18 — SO SÁNH AUTO vs AI
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 
 | Tiêu chí | Chế độ Auto (FSM) | Chế độ AI (SAC) |
 |---|---|---|
@@ -313,7 +312,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ---
 
 ## SLIDE 19 — DEMO TRỰC TIẾP
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - Chạy hệ thống thực tế trên phần mềm HMI nhóm tự phát triển: `python -m hmi.app`
 - Trình diễn chế độ Manual (Dùng thanh trượt điều khiển IK/FK).
 - Trình diễn chế độ Auto (FSM mượt mà).
@@ -325,7 +324,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ---
 
 ## SLIDE 20 — HẠN CHẾ & HƯỚNG PHÁT TRIỂN
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 
 **Hạn chế:**
 - AI bị "ngáo" nếu vật bị đặt ngoài vùng không gian huấn luyện (Out-of-Distribution).
@@ -341,7 +340,7 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 ---
 
 ## SLIDE 21 — CẢM ƠN
-**Nội dung:**
+**Nội dung hiển thị trên Slide (TỐI GIẢN):**
 - Cảm ơn Thầy/Cô hướng dẫn đã hỗ trợ sát sao.
 - Cảm ơn Hội đồng đã lắng nghe.
 - Q&A (Mời Hội đồng đặt câu hỏi).
