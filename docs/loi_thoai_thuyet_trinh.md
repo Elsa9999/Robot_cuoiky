@@ -13,7 +13,7 @@
 "Chính vì lý do đó, mục tiêu của đồ án em là xây dựng một trạm làm việc mô phỏng cho robot UR5e. Điểm nhấn của hệ thống là việc tích hợp cả 2 phương pháp điều khiển: Điều khiển lập trình cứng thông thường (Auto FSM) và phương pháp tự học thông minh thông qua thuật toán Học Tăng Cường - Reinforcement Learning. Mục tiêu lớn nhất là chứng minh hệ thống AI có khả năng hoạt động tốt ngang ngửa hoặc vượt trội so với lập trình cứng."
 
 **[SLIDE 4 - PHẠM VI & MÔI TRƯỜNG]**
-"Về phạm vi, em sử dụng bộ mô phỏng vật lý PyBullet chạy ở tốc độ 240Hz để đảm bảo tính chân thực. Đối tượng tác động là robot kéo và các vật thể hình trụ 100g, sử dụng một đầu hút chân không được mô phỏng động lực học để gắp vật."
+"Về phạm vi, em sử dụng bộ mô phỏng vật lý PyBullet chạy ở tốc độ 240Hz để đảm bảo tính chân thực. Đối tượng tác động là robot kéo và các vật thể hình trụ 100g, sử dụng một đầu hút chân không (Vacuum Suction Cup) được mô phỏng động lực học để gắp vật."
 
 **[SLIDE 5 - CÔNG NGHỆ ÁP DỤNG]**
 "Hệ thống của em được phát triển hoàn toàn bằng Python, với trí tuệ nhân tạo được xây dựng trên framework Stable-Baselines3 sử dụng PyTorch. Để người dùng cuối dễ thao tác, em cũng đã đóng gói một giao diện HMI chuyên nghiệp bằng thư viện PyQt5."
@@ -21,44 +21,47 @@
 **[SLIDE 6 - KIẾN TRÚC TỔNG THỂ]**
 "Nhìn vào sơ đồ kiến trúc này, hệ thống được chia thành 4 tầng rõ rệt hoạt động độc lập: Tầng Giao diện HMI trên cùng, Tầng Thuật toán xử lý Động học, Tầng Thuật toán AI, và Tầng dưới cùng là phần lõi mô phỏng trực tiếp PyBullet. Các dữ liệu được xử lý phi song song tránh nghẽn mạch."
 
-**[SLIDE 7 - ĐỘNG HỌC THUẬN FK] (Chỉ tay vào bảng và hình)**
-"Về mặt lõi toán học, em áp dụng phương pháp Động học Thuận theo quy ước Standard Denavit-Hartenberg (DH Tiêu chuẩn). Như quý thầy cô thấy trên bảng thông số, các độ dài tay đòn và độ lệch cổ tay được tham chiếu đúng 100% so với thông số thiết kế cơ khí ban đầu của dòng robot lõi e-Series từ Universal Robots."
+**[SLIDE 7 - ĐẶT TRỤC VÀ BẢNG DH] (Chỉ tay vào bảng và hình)**
+"Về mặt toán học, nhóm thiết lập hệ trục tọa độ tại từng khớp theo đúng quy tắc Standard Denavit-Hartenberg (DH Chuẩn). Bảng tham số (a, d, alpha) được nhóm tham khảo từ các tài liệu chuẩn quốc tế và đối chiếu khớp 100% với file thiết kế cơ khí (URDF) từ chính hãng Universal Robots."
 
-**[SLIDE 8 - ĐỘNG HỌC NGHỊCH IK]**
-"Đối với bài toán Động học Nghịch, em đã lập trình một bộ giải Hybrid kết hợp cả 2 phương pháp: Đầu tiên giải quyết bằng Phương pháp Giải tích hình học để lấy tốc độ dưới 1 mili-giây. Trong trường hợp vật rơi vào các góc 'mù' (singularity), hệ thống sẽ tự động chuyển sang phương pháp Số học dùng thuật toán Tối ưu L-BFGS-B để ép lỗi sai số về 0 một cách an toàn."
+**[SLIDE 8 - ĐỘNG HỌC THUẬN FK & KIỂM CHỨNG]**
+"Từ bảng DH, em xây dựng hàm Động học thuận bằng cách nhân liên tiếp 6 ma trận biến đổi 4x4. Để hội đồng yên tâm về tính chính xác, nhóm đã kiểm chứng độc lập kết quả tính tay bằng NumPy so với phần mềm Matlab (Robotics System Toolbox) và engine PyBullet. Sai số hoàn toàn bằng 0."
 
-**[SLIDE 9 - QUY HOẠCH QUỸ ĐẠO]**
-"Để robot không bị giật cứng khi di chuyển, em triển khai nội suy quỹ đạo Joint Space theo hình thang (Trapezoidal profile) để tăng/giảm tốc mượt mà. Đặc biệt, nội suy Cartesian Linearity được dùng ở giai đoạn cắm đầu gắp xuống vật để đảm bảo tay bám chuyển động theo một đường tịnh tiến thẳng tuyệt đối."
+**[SLIDE 9 - ĐỘNG HỌC NGHỊCH IK & KIỂM CHỨNG] (Nhấn mạnh sự kỹ tính của kỹ sư)**
+"Đối với bài toán Động học Nghịch, em đã lập trình một bộ giải Hybrid 2 lớp: Đầu tiên giải bằng Phương pháp Giải tích để lấy tốc độ dưới 1 mili-giây. Nếu gặp điểm mù (singularity), thuật toán Số học L-BFGS-B sẽ tự kích hoạt dự phòng. Đặc biệt, nhóm đã tự kiểm chứng bằng phương pháp Round-Trip vòng lặp kín: nạp góc vào FK ra tọa độ, nạp tọa độ đó vào IK để giải ngược lại ra góc mới. Sai số tính toán chưa tới 1 mm, khẳng định 2 hàm Động học đúng tuyệt đối 100%!"
 
-**[SLIDE 10 - CHẾ ĐỘ AUTO FSM]**
-"Đây là chế độ điều khiển theo lập trình truyền thống. Hệ thống vận hành như một cỗ máy trạng thái (State Machine) gồm 11 bước tuần tự: từ IDLE → DETECT → APPROACH → DESCEND → PICK → LIFT → MOVE_TO_BIN → PLACE → RELEASE → RETREAT → DONE. Nó hoạt động với độ thành công 100%, nhưng nhược điểm là cứng nhắc: nếu vật rơi ra khỏi vùng cấu hình cho trước, nó sẽ không biết cách tự xoay sở."
+**[SLIDE 10 - QUY HOẠCH QUỸ ĐẠO]**
+"Để robot không bị giật cứng khi di chuyển, em triển khai nội suy quỹ đạo Joint Space theo hình thang (Trapezoidal profile) để tăng/giảm tốc mượt mà. Đặc biệt, nội suy Cartesian Linearity được dùng ở giai đoạn cắm đầu gắp xuống vật để đảm bảo tay máy chuyển động theo một đường tịnh tiến thẳng tuyệt đối."
 
-**[SLIDE 11 - ỨNG DỤNG AI VÀO ĐIỀU HƯỚNG QUỸ ĐẠO]**
-"Để giải quyết sự cứng nhắc của FSM, nhóm chuyển sang sử dụng Học tăng cường. Tuy nhiên, thay vì sa đà vào các thuật toán AI phức tạp, nhóm xem AI như một 'Blackbox' để giải quyết bài toán cốt lõi: Điều hướng linh hoạt. Thuật toán được chọn là Soft Actor-Critic (SAC). Ưu điểm tuyệt đối của SAC trong kỹ thuật Robot là nó hỗ trợ 'Continuous Action' - tức là điều khiển dòng điện, vận tốc, góc xoay của động cơ một cách liên tục và cực kỳ trơn tru."
+**[SLIDE 11 - CHẾ ĐỘ AUTO FSM]**
+"Đây là chế độ điều khiển theo lập trình truyền thống. Hệ thống vận hành như một cỗ máy trạng thái (FSM) gồm 11 bước tuần tự: từ APPROACH, DESCEND, đến PICK và PLACE. Nó hoạt động với độ thành công 100% kèm cơ chế bảo vệ Jam Detector chống cháy motor."
 
-**[SLIDE 12 - CƠ CHẾ HYBRID GRIPPER & PHYSICS CLAMP] (Nhấn mạnh tư duy Cơ điện tử)**
-"Để AI không bay lượn hoang dại, nhóm không phó mặc hoàn toàn cho mạng nơ-ron mà áp dụng 2 quy tắc vật lý. Thứ nhất là Hybrid Gripper: Cảm biến tiệm cận sẽ tự động kích hoạt van chân không khi tay máy cách vật <4.5cm. AI không được quyền bật tắt giác hút. Thứ hai là Physics Clamp: Nhóm thiết lập ràng buộc động lực học, kẹp cứng trục cổ tay không cho phép dao động quá ±15 độ. Dù AI có bay đường nào, tay máy vẫn luôn chúc thẳng đứng 90 độ y hệt tiêu chuẩn công nghiệp."
+**[SLIDE 12 - TẠI SAO CẦN AI (RL)?]**
+"Dù Auto FSM chạy mượt, nhưng nhược điểm lớn nhất là sự 'cứng nhắc'. Nếu trong lúc robot đang thò tay xuống gắp, ta vô tình xê dịch vật thể đi chỗ khác, Auto sẽ đi mù quáng đến vị trí cũ và gắp hụt. Đó là lý do nhóm sử dụng Học Tăng Cường (SAC). AI có khả năng thích nghi thời gian thực, liên tục 'nhìn' thấy vật thể và tự động bẻ lái quỹ đạo đuổi theo vật một cách linh hoạt nhất."
 
-**[SLIDE 13 - OBSERVATION & ACTION]**
-"Đầu vào của AI là vector 20 chiều dữ liệu, bao gồm: vị trí EE và vật thể, vector tương đối EE→Vật và Vật→Bin, Quaternion hướng vật thể, trạng thái gripper, và 3 góc Euler của cổ tay EE để giám sát tư thế. Về đầu ra, Robot xuất hành động 7 chiều gồm dịch chuyển XYZ và xoay cổ tay Roll-Pitch-Yaw. Đặc biệt, chiều thứ 7 — điều khiển gripper — hoàn toàn KHÔNG được AI sử dụng. Thay vào đó, em áp dụng cơ chế Hybrid Gripper: gripper tự động gắp khi EE gần vật dưới 4.5cm, và tự nhả khi gần bin. AI chỉ cần học cách bay tới đâu — không cần học gripper timing — loại bỏ hoàn toàn Reward Hacking."
+**[SLIDE 13 - CƠ CHẾ HYBRID VACUUM & PHYSICS CLAMP] (Nhấn mạnh tư duy Cơ điện tử)**
+"Để AI không bay lượn hoang dại, nhóm áp dụng 2 đột phá cơ điện tử. Thứ nhất là Hybrid Vacuum: Cảm biến tiệm cận sẽ tự động kích hoạt van hút chân không khi tay máy cách vật < 4.5cm. AI hoàn toàn không cần học cách bật tắt bơm hút. Thứ hai là Physics Clamp: Nhóm kẹp cứng trục cổ tay không cho phép dao động quá ±15 độ. Dù AI có bay đường nào, tay máy vẫn luôn chúc thẳng đứng 90 độ y hệt chuẩn công nghiệp."
 
-**[SLIDE 14 - THIẾT KẾ HÀM REWARD] (Nhấn mạnh sự sáng tạo ở đây)**
-"Nhờ 2 cơ chế kẹp vật lý vừa trình bày ở Slide trước, việc thiết kế Hàm Phần Thưởng (Reward) của nhóm trở nên cực kỳ đơn giản và không có lỗ hổng để AI ăn gian (Reward Hacking). Hàm được chia làm 3 pha rõ rệt: Thưởng khi bay lại gần vật, Thưởng khi nhấc bổng vật lên, và Thưởng lớn khi mang vào đúng tọa độ thùng rác. AI chỉ việc tập trung hạ thấp trọng tâm tìm đường ngắn nhất."
+**[SLIDE 14 - OBSERVATION & ACTION]**
+"Đầu vào của AI là vector 20 chiều dữ liệu trạng thái. Về đầu ra, Robot xuất hành động 7 chiều gồm dịch chuyển XYZ và xoay cổ tay Roll-Pitch-Yaw. Đặc biệt, chiều thứ 7 — lệnh bật tắt hút chân không — hoàn toàn KHÔNG được AI sử dụng do cơ chế Hybrid Vacuum tự động lo liệu, loại bỏ 100% rủi ro AI ăn gian điểm thưởng (Reward Hacking)."
 
-**[SLIDE 15 — QUÁ TRÌNH TRAINING]**
-"Về quá trình huấn luyện, em chỉ thực hiện một lần training duy nhất từ đầu — from scratch — bằng script train_17d_place.py, không sử dụng Curriculum Learning hay Transfer Learning. Điều này khả thi nhờ 3 đột phá thiết kế: Thứ nhất, Hybrid Gripper giúp AI không cần học gripper timing. Thứ hai, Phase-Based Reward chia rõ 3 giai đoạn Approach → Carry → Place. Thứ ba, Physics-Level Euler Clamp kẹp trực tiếp góc Roll và Pitch trong hàm vật lý, ép tay máy luôn thẳng đứng mà không cần hàm phạt phức tạp. Ngoài ra, VecNormalize chuẩn hóa observation và reward tự động, giúp hội tụ ổn định. File train_17d_grasp.py tồn tại trong repo như bản thiết kế Curriculum 2 giai đoạn, nhưng thực tế không cần sử dụng vì train_17d_place.py đã hội tụ tốt từ đầu."
+**[SLIDE 15 - THIẾT KẾ HÀM REWARD] (Nhấn mạnh sự sáng tạo ở đây)**
+"Nhờ 2 cơ chế Hybrid Vacuum và Clamp vật lý vừa trình bày ở Slide trước, việc thiết kế Hàm Phần Thưởng của nhóm trở nên cực kỳ đơn giản và kín kẽ. Hàm được chia làm 3 pha rõ rệt: Thưởng khi bay lại gần vật, Thưởng khi nhấc bổng vật lên, và Thưởng cực lớn khi mang thả vào đúng tọa độ thùng rác."
 
-**[SLIDE 16 - KẾT QUẢ TRAINING]**
-"Như bảng trên slide, em chạy 10 triệu steps với 16 môi trường hoàn toàn song song đa luồng trên SubprocVecEnv. Tốc độ mô phỏng đạt khoảng 600 FPS, và toàn bộ quá trình training mất khoảng 3 tiếng trên Core i7, 16GB RAM. Kết quả: tỷ lệ thả vật thành công đạt 100 phần trăm tuyệt đối, kiểm chứng trên 50 chu kỳ ngẫu nhiên. Tư thế thao tác thẳng đứng y hệt chế độ Auto nhờ Physics Clamp ±15 độ. Output là cặp file best_model.zip và vecnormalize.pkl được lưu khớp nhau qua EvalCallback."
+**[SLIDE 16 — QUÁ TRÌNH TRAINING]**
+"Về quá trình huấn luyện, nhóm chỉ thực hiện một lần training duy nhất từ đầu — from scratch. Không cần dùng kỹ thuật Curriculum Learning phức tạp chia nhỏ giai đoạn vì môi trường đã được nhóm thiết kế quá tối ưu và an toàn tuyệt đối bởi 3 cơ chế: Hybrid Vacuum, Physics Clamp và Phase-Based Reward."
 
-**[SLIDE 17 - SO SÁNH AUTO vs AI]**
-"So sánh hai phương pháp: Cả hai đều đạt 100% tỉ lệ thành công. Tuy nhiên, chế độ Auto cần lập trình cứng từng bước quỹ đạo trong 11 trạng thái FSM, nên rất cứng nhắc. Trong khi đó, AI chỉ cần định nghĩa hàm Reward và để mạng Nơ-ron tự tìm quỹ đạo tối ưu, thích nghi linh hoạt khi vật ở bất kỳ vị trí nào. Tư thế thả vật của AI hoàn toàn chuẩn chỉ — thẳng đứng 90 độ — nhờ giới hạn vật lý Euler Clamp."
+**[SLIDE 17 - KẾT QUẢ TRAINING]**
+"Như đồ thị trên slide, em chạy 10 triệu steps với 16 môi trường song song đa luồng. Tốc độ mô phỏng đạt khoảng 600 FPS, và toàn bộ quá trình training mất khoảng 3 tiếng trên máy tính phổ thông Core i7. Kết quả: tỷ lệ thả vật thành công đạt 100 phần trăm tuyệt đối. Output cuối cùng là một mô hình Nơ-ron đã hội tụ hoàn toàn."
 
-**[SLIDE 18 - DEMO TRỰC TIẾP] (Nếu thầy cô cho chạy Demo)**
-"Sau đây, em xin phép chạy trực tiếp phần mềm HMI. Đây là giao diện của ứng dụng. (Vừa thao tác vừa nói) Đầu tiên là chuyển sang Tab Auto để robot đi theo đường mũi thẳng... Sau đó bật sang AI Mode, robot lập tức thể hiện khả năng di chuyển mượt mà, áp gắp vật một cách tối ưu bằng bộ não Nơ-ron."
+**[SLIDE 18 - SO SÁNH AUTO vs AI]**
+"So sánh hai phương pháp: Chế độ Auto cần lập trình cứng từng bước quỹ đạo. Trong khi đó, AI chỉ cần định nghĩa mục tiêu (Reward) và để mạng Nơ-ron tự tìm đường, tạo ra các đường bay parabol mượt mà và đặc biệt là khả năng đuổi theo vật thể nếu vật bị xê dịch bất ngờ."
 
-**[SLIDE 19 - HẠN CHẾ & HƯỚNG PT]**
-"Tuy nhiên, đồ án vẫn còn những mặt hạn chế. Hiện tại AI chỉ thích nghi tốt nhất trong Vùng Môi trường Đào tạo. Tương lai, mô hình sẽ cần Randomize lớn hơn, tích hợp Computer Vision như camera Intel RealSense để giải tỏa sự lệ thuộc vào tọa độ ảo, từ đó tiến tới áp dụng thẳng thuật toán này lên cánh tay UR5 thật ở xưởng công nghiệp."
+**[SLIDE 19 - DEMO TRỰC TIẾP] (Nếu thầy cô cho chạy Demo)**
+"Sau đây, em xin phép chạy phần mềm giao diện HMI. (Vừa thao tác vừa nói) Đầu tiên là chuyển sang Tab Auto để robot đi theo đường thẳng vuông vức... Sau đó em đổi qua chế độ AI Mode, cố tình dùng chuột kéo vật thể ra xa, quý thầy cô có thể thấy robot lập tức bẻ lái tự tìm đường đuổi theo và gắp vật thành công."
 
-**[SLIDE 20 - LỜI CẢM ƠN] (Mỉm cười, cúi đầu lẹ)**
-"Đồ án môn học này sẽ không thể thành công nếu thiếu đi sự hướng dẫn tận tình của Giáo viên. Đồng thời, em xin gửi lời cảm ơn thầy cô đã dành thời gian lắng nghe phần trình bày. Em xin tiếp nhận mọi câu hỏi và nhận xét từ quý thầy cô ạ!"
+**[SLIDE 20 - HẠN CHẾ & HƯỚNG PT]**
+"Tuy nhiên, đồ án vẫn còn một số hạn chế. Hiện tại AI dùng tọa độ ảo tuyệt đối được cung cấp từ phần mềm mô phỏng. Tương lai, nhóm đề xuất tích hợp Camera chiều sâu như Intel RealSense để AI tự trích xuất tọa độ từ Point Cloud, làm cơ sở để có thể nhúng mô hình trực tiếp lên tay máy UR5e thật dưới xưởng sản xuất."
+
+**[SLIDE 21 - LỜI CẢM ƠN] (Mỉm cười, cúi đầu chào)**
+"Đồ án môn học này sẽ không thể hoàn thiện nếu thiếu đi sự hướng dẫn tận tình của Giảng viên. Đồng thời, em xin gửi lời cảm ơn quý thầy cô đã dành thời gian lắng nghe phần trình bày. Em xin kết thúc và bắt đầu phần giải đáp câu hỏi từ Hội đồng ạ!"
