@@ -1,0 +1,509 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 15">
+<title>Bao cao</title>
+<style>
+body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.6; margin: 2cm; }
+h1 { color: #1F4E79; font-size: 18pt; border-bottom: 2px solid #1F4E79; padding-bottom: 6px; }
+h2 { color: #2E74B5; font-size: 16pt; margin-top: 24px; }
+h3 { color: #2E74B5; font-size: 14pt; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+th { background-color: #2E74B5; color: white; padding: 8px 12px; text-align: left; border: 1px solid #2E74B5; }
+td { padding: 8px 12px; border: 1px solid #ccc; }
+tr:nth-child(even) { background-color: #f2f7fb; }
+code { background-color: #f4f4f4; padding: 2px 6px; font-family: Consolas, monospace; font-size: 11pt; }
+pre { background-color: #f4f4f4; padding: 12px; border-left: 4px solid #2E74B5; overflow-x: auto; font-family: Consolas, monospace; font-size: 10pt; line-height: 1.4; }
+blockquote { background: #e8f4fd; border-left: 6px solid #2E74B5; margin: 16px 0; padding: 12px 16px; font-style: italic; }
+strong { color: #1F4E79; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1>BÁO CÁO KỸ THUẬT: QUY HOẠCH QUỸ ĐẠO VÀ TÍCH HỢP HỌC TĂNG CƯỜNG (RL)</h1>
+<p><strong>Các file mã nguồn liên quan:</strong><br />
+- <code>simulation/trajectory_executor.py</code> — Bộ thực thi quỹ đạo<br />
+- <code>simulation/pick_place_sm.py</code> — Máy trạng thái FSM (chế độ Auto)<br />
+- <code>train_17d_place.py</code> — Pipeline huấn luyện SAC (chế độ AI)<br />
+- <code>hmi/sim_bridge.py</code> — Cầu nối triển khai AI (Inference)  </p>
+<hr />
+<h2>1. Tổng quan vấn đề: Quy hoạch Quỹ đạo là gì?</h2>
+<p>Quy hoạch quỹ đạo (Trajectory Planning) là bài toán cốt lõi trong điều khiển robot: <strong>"Làm thế nào để di chuyển mũi kẹp (End-Effector) từ điểm A đến điểm B một cách mượt mà, an toàn và hiệu quả?"</strong></p>
+<p>Đồ án triển khai <strong>hai phương pháp hoàn toàn khác nhau</strong> để giải quyết bài toán này, tùy thuộc vào chế độ vận hành:</p>
+<table>
+<thead>
+<tr>
+<th>Tiêu chí</th>
+<th>Chế độ Auto (FSM)</th>
+<th>Chế độ AI (SAC)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phương pháp</strong></td>
+<td>Lập trình cứng theo thứ tự</td>
+<td>Tự học từ thử-sai</td>
+</tr>
+<tr>
+<td><strong>Quỹ đạo</strong></td>
+<td>Nội suy hình thang vận tốc</td>
+<td>Gia số dịch chuyển liên tục</td>
+</tr>
+<tr>
+<td><strong>Ưu điểm</strong></td>
+<td>Ổn định, dự đoán được</td>
+<td>Linh hoạt, thích ứng vị trí mới</td>
+</tr>
+<tr>
+<td><strong>Nhược điểm</strong></td>
+<td>Cứng nhắc, phải lập trình từng bước</td>
+<td>Cần thời gian huấn luyện dài</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>2. Phương pháp 1: Quy hoạch Quỹ đạo truyền thống (Chế độ Auto)</h2>
+<h3>2.1 Máy trạng thái hữu hạn (Finite State Machine — FSM)</h3>
+<p>Ở chế độ Auto, robot thực hiện công việc Pick &amp; Place theo một <strong>chuỗi 11 trạng thái tuần tự</strong> được lập trình cứng:</p>
+<pre><code>IDLE → DETECT → APPROACH → DESCEND → PICK → LIFT → MOVE_TO_BIN → PLACE → RELEASE → RETREAT → DONE
+</code></pre>
+<p>Mỗi trạng thái đại diện cho một bước hành động cụ thể:</p>
+<table>
+<thead>
+<tr>
+<th>Trạng thái</th>
+<th>Hành động</th>
+<th>Chi tiết</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>IDLE</strong></td>
+<td>Chờ lệnh</td>
+<td>Robot đứng yên tại vị trí Home</td>
+</tr>
+<tr>
+<td><strong>DETECT</strong></td>
+<td>Phát hiện vật</td>
+<td>Camera ảo (Raycast) quét tọa độ vật thể</td>
+</tr>
+<tr>
+<td><strong>APPROACH</strong></td>
+<td>Tiếp cận</td>
+<td>Di chuyển đến vị trí phía trên vật (v = 0.12 m/s)</td>
+</tr>
+<tr>
+<td><strong>DESCEND</strong></td>
+<td>Hạ xuống</td>
+<td>Từ từ hạ mũi kẹp xuống sát vật (v = 0.05 m/s)</td>
+</tr>
+<tr>
+<td><strong>PICK</strong></td>
+<td>Gắp</td>
+<td>Kích hoạt Vacuum Gripper, chờ 0.3s ổn định</td>
+</tr>
+<tr>
+<td><strong>LIFT</strong></td>
+<td>Nâng lên</td>
+<td>Nâng vật lên độ cao an toàn</td>
+</tr>
+<tr>
+<td><strong>MOVE_TO_BIN</strong></td>
+<td>Di chuyển ngang</td>
+<td>Bay ngang đến vị trí phía trên thùng (v = 0.15 m/s)</td>
+</tr>
+<tr>
+<td><strong>PLACE</strong></td>
+<td>Hạ vào thùng</td>
+<td>Từ từ hạ vật xuống miệng thùng (v = 0.05 m/s)</td>
+</tr>
+<tr>
+<td><strong>RELEASE</strong></td>
+<td>Nhả vật</td>
+<td>Tắt Vacuum Gripper, vật rơi vào thùng</td>
+</tr>
+<tr>
+<td><strong>RETREAT</strong></td>
+<td>Rút tay</td>
+<td>Quay về vị trí Home an toàn</td>
+</tr>
+<tr>
+<td><strong>DONE</strong></td>
+<td>Hoàn tất</td>
+<td>Báo thành công, sẵn sàng chu kỳ mới</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cơ chế an toàn tích hợp:</strong>
+- <strong>Timeout 15 giây:</strong> Nếu bất kỳ trạng thái nào kéo dài quá 15 giây, FSM tự động chuyển sang trạng thái ERROR và khóa hệ thống.
+- <strong>WorkspaceValidator:</strong> Trước khi di chuyển, hệ thống kiểm tra xem tọa độ đích có nằm trong vùng làm việc an toàn hay không. Nếu vi phạm (quá gần tường, quá thấp...), FSM từ chối thực thi.</p>
+<h3>2.2 Bộ thực thi quỹ đạo (Trajectory Executor)</h3>
+<p>Để di chuyển mượt mà giữa các trạng thái, hệ thống sử dụng lớp <code>TrajectoryExecutor</code> — hoạt động giống như một <strong>"kim đĩa than"</strong> lướt trên rãnh nhạc:</p>
+<p><strong>Nguyên lý hoạt động:</strong>
+1. Nhận vào một đối tượng <code>JointTrajectory</code> (chuỗi N điểm tọa độ khớp theo thời gian).
+2. Mỗi bước vật lý (1/240 giây), đọc ra tọa độ 6 khớp tại thời điểm <code>t</code> trên quỹ đạo.
+3. Đẩy tọa độ đó xuống PyBullet bằng lệnh <code>set_joint_positions()</code> với <code>max_velocity = 3.0 rad/s</code>.
+4. Kiểm tra xem quỹ đạo đã chạy xong chưa. Nếu xong, gọi <code>done_callback</code> để FSM chuyển trạng thái.</p>
+<pre><code class="language-python">def update(self):
+    self._t += (1.0 / 240.0) * self._speed_scale   # Tăng thời gian
+    point = self._traj.get_point(self._t)           # Đọc điểm trên quỹ đạo
+    self._env.set_joint_positions(point['q'], max_velocity=3.0)  # Thực thi
+    if self._traj.is_done(self._t):                 # Kiểm tra hoàn tất
+        self._done_callback()
+</code></pre>
+<p><strong>Biên dạng vận tốc hình thang (Trapezoidal Velocity Profile):</strong></p>
+<p>Thay vì di chuyển với vận tốc cố định (gây giật cục khi dừng), hệ thống sử dụng biểu đồ vận tốc hình thang 3 giai đoạn:</p>
+<ul>
+<li><strong>Giai đoạn 1 — Tăng tốc (Acceleration):</strong> Robot tăng tốc tuyến tính từ v=0 đến v_max.</li>
+<li><strong>Giai đoạn 2 — Vận tốc đều (Cruise):</strong> Duy trì v_max trên quãng đường dài nhất.</li>
+<li><strong>Giai đoạn 3 — Giảm tốc (Deceleration):</strong> Phanh tuyến tính từ v_max về v=0 trước khi chạm đích.</li>
+</ul>
+<p>Mỗi trạng thái FSM sử dụng vận tốc tối đa khác nhau tùy yêu cầu:
+- <code>APPROACH</code>: v_max = 0.12 m/s (tốc độ trung bình — di chuyển xa)
+- <code>DESCEND</code> và <code>PLACE</code>: v_max = 0.05 m/s (tốc độ chậm — đòi hỏi chính xác)
+- <code>MOVE_TO_BIN</code>: v_max = 0.15 m/s (tốc độ nhanh — quãng đường dài, không cần chính xác cao)</p>
+<h3>2.3 Chuyển đổi tọa độ: Cartesian → Joint Space</h3>
+<p>FSM hoạt động trong không gian Cartesian (tọa độ XYZ). Tuy nhiên, các servo motor của robot chỉ hiểu góc xoay khớp (Joint Space). Do đó, tại mỗi điểm waypoint, hệ thống gọi bộ <strong>Động học nghịch (IK)</strong> để chuyển đổi:</p>
+<pre><code>Tọa độ XYZ đích → IK giải ra 6 góc khớp → Đẩy xuống PyBullet POSITION_CONTROL
+</code></pre>
+<p>Đây chính là minh chứng cho việc các module Động học (FK/IK) và module Điều khiển (FSM/Trajectory) trong đồ án được thiết kế <strong>liên kết chặt chẽ</strong> với nhau.</p>
+<hr />
+<h2>3. Phương pháp 2: Quy hoạch Quỹ đạo bằng Học tăng cường (Chế độ AI)</h2>
+<h3>3.1 Thuật toán SAC (Soft Actor-Critic)</h3>
+<p>Đồ án sử dụng thuật toán <strong>SAC (Soft Actor-Critic)</strong> — một thuật toán Học tăng cường thuộc dòng <strong>Off-Policy, Maximum Entropy</strong> do Haarnoja et al. (2019) đề xuất. SAC được đánh giá là thuật toán mạnh nhất hiện tại cho các bài toán điều khiển robot liên tục.</p>
+<p><strong>Tại sao chọn SAC thay vì PPO?</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tiêu chí</th>
+<th>SAC (Off-Policy)</th>
+<th>PPO (On-Policy)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hiệu quả dữ liệu</strong></td>
+<td>Cao — tái sử dụng dữ liệu cũ qua Replay Buffer</td>
+<td>Thấp — mỗi batch chỉ dùng 1 lần</td>
+</tr>
+<tr>
+<td><strong>Khám phá (Exploration)</strong></td>
+<td>Tự động điều chỉnh qua entropy</td>
+<td>Phụ thuộc vào noise thủ công</td>
+</tr>
+<tr>
+<td><strong>Ổn định</strong></td>
+<td>Cao — 2 mạng Critic chéo giảm overestimation</td>
+<td>Trung bình</td>
+</tr>
+<tr>
+<td><strong>Phù hợp bài toán</strong></td>
+<td>Rất tốt cho hành động liên tục (robot)</td>
+<td>Tốt cho hành động rời rạc (game)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Các siêu tham số (Hyperparameters) đã tối ưu:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tham số</th>
+<th>Giá trị</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>learning_rate</code></td>
+<td>3×10⁻⁴</td>
+<td>Tốc độ học Adam (chuẩn paper SAC)</td>
+</tr>
+<tr>
+<td><code>gamma</code></td>
+<td>0.99</td>
+<td>Hệ số chiết khấu — task dài ~300 bước</td>
+</tr>
+<tr>
+<td><code>batch_size</code></td>
+<td>256</td>
+<td>Kích thước mini-batch gradient</td>
+</tr>
+<tr>
+<td><code>tau</code></td>
+<td>0.005</td>
+<td>Polyak averaging — cập nhật Target Network</td>
+</tr>
+<tr>
+<td><code>buffer_size</code></td>
+<td>1,000,000</td>
+<td>Dung lượng Replay Buffer (1M transition)</td>
+</tr>
+<tr>
+<td><code>learning_starts</code></td>
+<td>10,000</td>
+<td>Warm-up exploration trước khi bắt đầu học</td>
+</tr>
+<tr>
+<td><code>ent_coef</code></td>
+<td>auto_0.1</td>
+<td>Entropy tự động — khởi tạo ở mức cao để khám phá nhiều</td>
+</tr>
+<tr>
+<td><code>net_arch</code></td>
+<td>[256, 256]</td>
+<td>Mạng MLP 2 lớp ẩn, mỗi lớp 256 neuron</td>
+</tr>
+</tbody>
+</table>
+<h3>3.2 Không gian Quan sát (Observation Space) — 20 chiều</h3>
+<p>Tại mỗi bước (step), Agent quan sát môi trường qua một vector 20 chiều:</p>
+<table>
+<thead>
+<tr>
+<th>Chỉ số</th>
+<th>Nội dung</th>
+<th>Kích thước</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[0:3]</td>
+<td>Vị trí EE (x, y, z)</td>
+<td>3D</td>
+<td>Tọa độ hiện tại của mũi kẹp</td>
+</tr>
+<tr>
+<td>[3:6]</td>
+<td>Vị trí Object (x, y, z)</td>
+<td>3D</td>
+<td>Tọa độ vật thể cần gắp</td>
+</tr>
+<tr>
+<td>[6:9]</td>
+<td>Vector tương đối EE→Object</td>
+<td>3D</td>
+<td>Hướng và khoảng cách từ EE đến vật</td>
+</tr>
+<tr>
+<td>[9:12]</td>
+<td>Vector tương đối Object→Bin</td>
+<td>3D</td>
+<td>Hướng và khoảng cách từ vật đến thùng</td>
+</tr>
+<tr>
+<td>[12:16]</td>
+<td>Quaternion Object</td>
+<td>4D</td>
+<td>Góc xoay của vật (để biết vật nghiêng hay thẳng)</td>
+</tr>
+<tr>
+<td>[16]</td>
+<td>Trạng thái Gripper</td>
+<td>1D</td>
+<td>0.0 = rảnh, 1.0 = đang giữ vật</td>
+</tr>
+<tr>
+<td>[17:20]</td>
+<td>Góc Euler EE (roll, pitch, yaw)</td>
+<td>3D</td>
+<td>Hướng xoay mũi kẹp — dùng cho Upright Reward</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tại sao cần 3D Euler của EE (chỉ số 17-20)?</strong></p>
+<p>Trong bài toán Pick &amp; Place, mũi kẹp <strong>bắt buộc phải hướng thẳng xuống</strong> (Pitch ≈ π rad) khi gắp vật. Nếu thiếu thông tin này, AI sẽ không biết mũi kẹp đang nghiêng hay thẳng, dẫn đến việc gắp lệch hoặc gắp hụt.</p>
+<p><strong>VecNormalize — Chuẩn hóa tự động:</strong></p>
+<p>Toàn bộ vector Observation được chuẩn hóa bởi lớp <code>VecNormalize</code> (thư viện Stable-Baselines3):
+- Tự động duy trì running mean và running standard deviation.
+- Mỗi chiều observation được biến đổi về phân phối chuẩn N(0,1).
+- Giúp mạng Neural hội tụ nhanh hơn 3-5 lần so với không chuẩn hóa.</p>
+<h3>3.3 Không gian Hành động (Action Space) — 7 chiều</h3>
+<p>Mạng Neural (Actor Network) xuất ra một vector 7 chiều liên tục trong khoảng [-1, 1]:</p>
+<table>
+<thead>
+<tr>
+<th>Chỉ số</th>
+<th>Nội dung</th>
+<th>Hệ số nhân</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[0:3]</td>
+<td>Gia số dịch chuyển (Δx, Δy, Δz)</td>
+<td>× CART_DELTA_MAX</td>
+<td>Di chuyển EE trong không gian Cartesian</td>
+</tr>
+<tr>
+<td>[3:6]</td>
+<td>Gia số xoay (ΔRoll, ΔPitch, ΔYaw)</td>
+<td>× 0.08 rad (~4.5°)</td>
+<td>Xoay cổ tay robot</td>
+</tr>
+<tr>
+<td>[6]</td>
+<td>Không sử dụng</td>
+<td>—</td>
+<td>Dành cho Hybrid Gripper (xem mục 3.4)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cách thức hoạt động:</strong></p>
+<p>AI không xuất ra một tọa độ đích cụ thể. Thay vào đó, nó xuất ra các <strong>gia số dịch chuyển nhỏ (delta)</strong> tại mỗi bước. Vị trí mới được tính bằng:</p>
+<pre><code>x_mới = x_cũ + action[0] × CART_DELTA_MAX
+y_mới = y_cũ + action[1] × CART_DELTA_MAX
+z_mới = z_cũ + action[2] × CART_DELTA_MAX
+</code></pre>
+<p>Tọa độ Cartesian mới sau đó được chuyển qua bộ <strong>Động học nghịch (IK)</strong> để dịch thành 6 góc khớp và đẩy xuống PyBullet thực thi. Phương pháp này biến hành động của AI giống như một <strong>"phi công lái máy bay"</strong> — đẩy cần joystick liên tục để điều hướng mũi kẹp đến mục tiêu.</p>
+<h3>3.4 Kiến trúc Hybrid Gripper — Đột phá thiết kế cốt lõi</h3>
+<p>Đây là thiết kế quan trọng nhất của hệ thống AI, giải quyết triệt để vấn đề <strong>Reward Hacking</strong> — một hiện tượng phổ biến trong Học tăng cường.</p>
+<p><strong>Vấn đề Reward Hacking:</strong></p>
+<p>Trong các bài toán RL kinh điển, nếu cho AI tự quyết định khi nào đóng/mở kẹp, AI sẽ phát hiện ra một "lỗ hổng" trong hàm thưởng: nó có thể bay đến gần vật, gắp rồi nhả liên tục để nhận thưởng nhỏ lẻ mà không bao giờ mang vật đi bỏ vào thùng. Đây là hành vi tối ưu hóa sai mục tiêu.</p>
+<p><strong>Giải pháp Hybrid Gripper:</strong></p>
+<p>AI <strong>KHÔNG</strong> được phép quyết định việc đóng/mở kẹp. Thay vào đó, môi trường (Environment) tự động xử lý:</p>
+<table>
+<thead>
+<tr>
+<th>Pha</th>
+<th>Điều kiện</th>
+<th>Hành động tự động</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Phase 0 — Approach</strong></td>
+<td>Khoảng cách EE đến vật &lt; 4.5cm</td>
+<td>Gripper tự động kích hoạt (hút vật)</td>
+</tr>
+<tr>
+<td><strong>Phase 1 — Carry</strong></td>
+<td>Đang giữ vật + nâng ≥ 20cm</td>
+<td>Gripper giữ chặt, không nhả</td>
+</tr>
+<tr>
+<td><strong>Phase 2 — Place</strong></td>
+<td>Khoảng cách EE đến bin &lt; 5cm</td>
+<td>Gripper tự động nhả vật</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"># Trong hàm step():
+if self._phase == 0:
+    self._env.activate_gripper()      # Luôn cố gắp (tự động)
+elif self._phase == 1:
+    pass                               # Giữ chặt — không can thiệp
+elif self._phase == 2:
+    if np.linalg.norm(ee - tgt) &lt; 0.05:
+        self._env.release_gripper()   # Tự động nhả khi gần bin
+</code></pre>
+<p><strong>Ý nghĩa:</strong> AI chỉ cần tập trung 100% năng lực tính toán vào việc <strong>học điều hướng (Navigation)</strong> — tìm đường bay đến vật, nâng lên, bay đến thùng. Khâu đóng/mở kẹp hoàn toàn do logic quy tắc (Rule-based) xử lý. Điều này giúp giảm đáng kể độ phức tạp của bài toán, từ đó tăng tốc độ hội tụ và loại bỏ Reward Hacking.</p>
+<h3>3.5 Hệ thống Phần thưởng theo Pha (Phase-Based Reward)</h3>
+<p>Hàm thưởng được thiết kế theo 3 pha tương ứng với 3 giai đoạn hành động:</p>
+<p><strong>Phase 0 — Approach (Tiếp cận vật thể):</strong>
+- <strong>Dense Reward:</strong> Thưởng tỉ lệ nghịch với khoảng cách đến vật (càng gần càng nhiều điểm, tối đa +2.0).
+- <strong>Grasp Bonus:</strong> Khi gắp thành công → +50.0 điểm (thưởng 1 lần duy nhất).
+- <strong>Công thức:</strong> <code>reward = max(0, 2.0 - khoảng_cách × 8.0)</code></p>
+<p><strong>Phase 1 — Carry (Vận chuyển):</strong>
+- <strong>Lift Bonus:</strong> Nâng vật lên ≥ 20cm → +30.0 điểm (thưởng 1 lần).
+- <strong>Dense Reward:</strong> Thưởng tỉ lệ nghịch với khoảng cách XY đến thùng (tối đa +2.0).
+- <strong>Phạt bay thấp:</strong> Nếu EE dưới 60cm khi đang vận chuyển → -3.0 (buộc AI bay cao tránh va chạm).</p>
+<p><strong>Phase 2 — Place (Đặt vào thùng):</strong>
+- <strong>Dense Reward:</strong> Thưởng khi hạ gần tâm thùng (tối đa +3.0).
+- <strong>Place Bonus:</strong> Khi vật rơi đúng vào thùng → <strong>+500.0 điểm</strong> (thưởng lớn nhất, khuyến khích hoàn thành nhiệm vụ).</p>
+<p><strong>Time Penalty:</strong> Mỗi bước trừ -0.05 điểm, khuyến khích AI hoàn thành nhanh.</p>
+<h3>3.6 Cấu hình Huấn luyện</h3>
+<table>
+<thead>
+<tr>
+<th>Thông số</th>
+<th>Giá trị</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tổng số bước</td>
+<td>10,000,000 (10M)</td>
+<td>~14-16 giờ trên i7 + GTX 1650</td>
+</tr>
+<tr>
+<td>Số môi trường song song</td>
+<td>16 (SubprocVecEnv)</td>
+<td>Chạy trên 16 tiến trình con</td>
+</tr>
+<tr>
+<td>Tần suất đánh giá</td>
+<td>Mỗi 200,000 bước</td>
+<td>20 episode đánh giá, lưu best model</td>
+</tr>
+<tr>
+<td>Tần suất checkpoint</td>
+<td>Mỗi 250,000 bước</td>
+<td>Lưu cả model + VecNormalize stats</td>
+</tr>
+<tr>
+<td>Seed</td>
+<td>42</td>
+<td>Đảm bảo tái lập kết quả</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>4. So sánh tổng hợp hai phương pháp</h2>
+<table>
+<thead>
+<tr>
+<th>Tiêu chí</th>
+<th>Auto (FSM + Trajectory)</th>
+<th>AI (SAC + Hybrid Gripper)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cách di chuyển</strong></td>
+<td>Nội suy waypoint theo biên dạng hình thang</td>
+<td>Gia số delta liên tục từ mạng Neural</td>
+</tr>
+<tr>
+<td><strong>Xử lý gripper</strong></td>
+<td>FSM gọi trực tiếp <code>activate()</code>/<code>release()</code></td>
+<td>Hybrid Gripper tự động theo khoảng cách</td>
+</tr>
+<tr>
+<td><strong>Tần số ra quyết định</strong></td>
+<td>1 lần/state (11 quyết định/cycle)</td>
+<td>1 lần/step (300 quyết định/cycle)</td>
+</tr>
+<tr>
+<td><strong>Thời gian hoàn thành</strong></td>
+<td>~8-12 giây</td>
+<td>~5-8 giây (sau khi hội tụ)</td>
+</tr>
+<tr>
+<td><strong>Khả năng thích ứng</strong></td>
+<td>Không — vật phải ở vùng đã lập trình</td>
+<td>Có — thích ứng vị trí vật ngẫu nhiên</td>
+</tr>
+<tr>
+<td><strong>Sử dụng IK</strong></td>
+<td>Gián tiếp qua <code>CartesianTrajectory</code></td>
+<td>Trực tiếp qua <code>move_ee_cartesian()</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>5. Sự kết hợp giữa Toán học Robot Cổ điển và AI Hiện đại</h2>
+<p>Điểm đặc biệt của đồ án là AI <strong>KHÔNG</strong> thay thế hoàn toàn toán học cổ điển. Thay vào đó, hai thành phần này được <strong>lồng ghép bổ trợ lẫn nhau:</strong></p>
+<ul>
+<li><strong>AI (SAC)</strong> hoạt động ở tầng cao — suy nghĩ chiến lược: "Bay đi đâu tiếp?" (Tọa độ Cartesian XYZ).</li>
+<li><strong>Bộ Động học nghịch (IK)</strong> hoạt động ở tầng thấp — thực thi kỹ thuật: "Xoay từng khớp bao nhiêu độ để đến được tọa độ đó?" (6 góc Joint Space).</li>
+<li><strong>Bộ Động học thuận (FK)</strong> cung cấp tọa độ EE hiện tại cho Observation Space của AI.</li>
+</ul>
+<p>Sự phân tầng này đảm bảo AI chỉ cần giải quyết bài toán điều hướng 3 chiều (XYZ) thay vì phải tự tìm ra quan hệ phi tuyến phức tạp giữa 6 góc xoay và vị trí trong không gian — một bài toán mà toán học cổ điển (ma trận DH) đã có lời giải chính xác.</p>
+</body>
+</html>

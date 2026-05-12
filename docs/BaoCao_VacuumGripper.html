@@ -1,0 +1,54 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Báo cáo</title>
+<style>
+body {
+    font-family: 'Times New Roman', serif;
+    font-size: 13pt;
+    line-height: 1.5;
+}
+h1 { color: #2E74B5; font-size: 18pt; }
+h2 { color: #2E74B5; font-size: 16pt; }
+h3 { color: #2E74B5; font-size: 14pt; }
+blockquote {
+    background: #f9f9f9;
+    border-left: 10px solid #ccc;
+    margin: 1.5em 10px;
+    padding: 0.5em 10px;
+}
+</style>
+</head>
+<body>
+<h1>BÁO CÁO KỸ THUẬT: CƠ CHẾ HOẠT ĐỘNG CỦA VACUUM GRIPPER (GIÁC HÚT CHÂN KHÔNG)</h1>
+<h2>1. Nguyên lý tiếp cận trong Môi trường Mô phỏng</h2>
+<p>Khác với các tay gắp cơ khí 2 ngón (2-finger gripper) yêu cầu phải mô phỏng chính xác lực ma sát, bề mặt tiếp xúc và lực kẹp, dự án sử dụng <strong>Giác hút chân không (Vacuum Gripper)</strong>. </p>
+<p>Trong Engine vật lý PyBullet, giác hút không được mô phỏng bằng áp suất khí động học mà bằng kỹ thuật <strong>Ràng buộc vật lý cứng (JOINT_FIXED Constraint)</strong>.
+- <strong>Khi hút:</strong> Hệ thống tạo một "mối nối cứng" tàng hình kết nối mũi tay máy (End-Effector) và vật thể. Vật thể sẽ di chuyển hoàn toàn phụ thuộc vào tay máy.
+- <strong>Khi nhả:</strong> Xóa bỏ "mối nối cứng" này. Vật thể ngay lập tức được trả về trạng thái vật lý bình thường, chịu tác dụng của trọng lực ($g = -9.81 m/s^2$) và rơi xuống thùng chứa (Bin).</p>
+<hr />
+<h2>2. Điểm nhấn Kỹ thuật: Khắc phục sự cố "Physics Explosion"</h2>
+<p>Một trong những thách thức lớn nhất khi lập trình Vacuum Gripper trong mô phỏng là hiện tượng <strong>Bùng nổ vật lý (Physics Explosion)</strong>.</p>
+<h3>Vấn đề:</h3>
+<p>Khi gọi lệnh dính vật (<code>p.createConstraint</code>), nếu chỉ kết nối tâm của mũi kẹp với tâm của vật thể, vật thể sẽ lập tức bị "dịch chuyển tức thời" (teleport) vào bên trong thân của mũi kẹp. Điều này dẫn đến sự <strong>Lồng ghép va chạm (Collision Penetration)</strong>. Engine vật lý của PyBullet sẽ cố gắng đẩy hai vật ra xa nhau với một lực cực lớn, khiến vật thể bị bắn văng ra ngoài không gian.</p>
+<h3>Giải pháp thuật toán:</h3>
+<p>Thay vì dính trực tiếp, thuật toán tính toán một <strong>Độ lệch không gian cục bộ (Local Transformation Offset)</strong> trước khi dán.</p>
+<ol>
+<li><strong>Bước 1:</strong> Đọc tọa độ và góc xoay tuyệt đối (World Frame) của mũi kẹp và vật thể.</li>
+<li><strong>Bước 2:</strong> Sử dụng ma trận đảo ngược (<code>p.invertTransform</code>) trên hệ tọa độ mũi kẹp.</li>
+<li><strong>Bước 3:</strong> Nhân ma trận (<code>p.multiplyTransforms</code>) giữa nghịch đảo mũi kẹp và tọa độ vật. Kết quả trả về chính là vị trí của vật thể <strong>dưới góc nhìn của mũi kẹp (Local Frame)</strong>.</li>
+<li><strong>Bước 4:</strong> Khởi tạo <code>JOINT_FIXED</code> sử dụng chính thông số Offset này. </li>
+</ol>
+<p><strong>=&gt; Kết quả:</strong> Vật thể được "đóng băng" ngay tại vị trí chạm chính xác, không bị teleport, đảm bảo hệ thống vật lý hoạt động ổn định và mượt mà.</p>
+<hr />
+<h2>3. Trực quan hóa giao diện (Visual Indicator)</h2>
+<p>Nhằm mục đích hỗ trợ quá trình gỡ lỗi (debugging) và giám sát trạng thái của AI, hệ thống tích hợp vòng tròn tín hiệu tại mũi kẹp:
+- <strong>Vòng tròn màu Xanh lá (Green):</strong> Kích hoạt trạng thái Hút. Khẳng định Constraint đã được kết nối thành công.
+- <strong>Vòng tròn màu Đỏ (Red):</strong> Trạng thái nhả/Nghỉ. Vật thể đang không bị chi phối bởi tay máy.</p>
+<blockquote>
+<p><strong>💡 Note cho hội đồng bảo vệ:</strong> "Việc tách biệt cơ chế hút bằng Constraint thay vì mô phỏng ma sát tay gắp không chỉ giảm tải đáng kể cho CPU (tính toán ở tần số 240Hz), mà còn giúp mô hình Học tăng cường (AI) ổn định hơn, không bị fail epoch do vật thể vô tình rơi rớt do lỗi tính toán va chạm của Engine."</p>
+</blockquote>
+</body>
+</html>

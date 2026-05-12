@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<style>
+    body { font-family: "Times New Roman", Times, serif; font-size: 14pt; line-height: 1.5; margin: 40px; }
+    h1 { color: #1E3A8A; text-align: center; }
+    h2 { color: #2563EB; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+    h3 { color: #1D4ED8; }
+    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+    th, td { border: 1px solid black; padding: 10px; text-align: center; }
+    th { background-color: #F3F4F6; font-weight: bold; }
+    .formula { font-family: "Cambria Math", "Times New Roman", serif; font-style: italic; font-size: 15pt; background-color: #F9FAFB; padding: 10px; border-left: 4px solid #3B82F6; margin: 10px 0; display: block;}
+    .matrix { display: inline-block; text-align: center; vertical-align: middle; }
+    .matrix-row { display: block; }
+    .bracket { font-size: 24pt; font-weight: lighter; }
+</style>
+</head>
+<body>
+
+<h1>ĐỘNG HỌC ROBOT UR5E (KINEMATICS)</h1>
+
+<p>Tài liệu này tổng hợp các công thức toán học lõi được sử dụng để điều khiển tay máy UR5e (6 bậc tự do), bao gồm Động học Thuận (FK) và Động học Nghịch (IK).</p>
+
+<h2>1. Bảng Thông Số Denavit-Hartenberg (DH Table)</h2>
+<p>Các phương trình động học của UR5e được xây dựng trên quy ước DH tiêu chuẩn (Standard DH). Dưới đây là cấu trúc bảng DH với số liệu thực tế:</p>
+
+<table>
+    <tr>
+        <th>Khớp (Joint)</th>
+        <th>a (Độ dài link)</th>
+        <th>d (Độ dời trục)</th>
+        <th>&alpha; (Góc xoắn)</th>
+        <th>&theta; (Biến khớp)</th>
+    </tr>
+    <tr><td>1 (Base)</td><td>0.0000 m</td><td>0.1625 m</td><td>90&deg;</td><td>&theta;1</td></tr>
+    <tr><td>2 (Shoulder)</td><td>-0.4250 m</td><td>0.0000 m</td><td>0&deg;</td><td>&theta;2</td></tr>
+    <tr><td>3 (Elbow)</td><td>-0.3922 m</td><td>0.0000 m</td><td>0&deg;</td><td>&theta;3</td></tr>
+    <tr><td>4 (Wrist 1)</td><td>0.0000 m</td><td>0.1333 m</td><td>90&deg;</td><td>&theta;4</td></tr>
+    <tr><td>5 (Wrist 2)</td><td>0.0000 m</td><td>0.0997 m</td><td>-90&deg;</td><td>&theta;5</td></tr>
+    <tr><td>6 (Wrist 3)</td><td>0.0000 m</td><td>0.0996 m</td><td>0&deg;</td><td>&theta;6</td></tr>
+</table>
+
+<p><em>Ghi chú: Các biến <strong>&theta;i</strong> là các góc xoay thực tế của 6 động cơ robot.</em></p>
+
+<h2>2. Động Học Thuận (Forward Kinematics - FK)</h2>
+<p><strong>Bài toán:</strong> Cho biết 6 góc khớp (&theta;1 ... &theta;6), tìm tọa độ không gian (X, Y, Z) và hướng (Roll, Pitch, Yaw) của điểm cuối tay máy (End-Effector).</p>
+
+<h3>Ma trận biến đổi thuần nhất (DH Transform Matrix)</h3>
+<p>Mỗi khớp <em>i</em> sẽ tạo ra một ma trận kích thước 4x4 tính theo công thức:</p>
+<div class="formula">
+    T<sub>i</sub> = <br><br>
+    [ cos(&theta;<sub>i</sub>) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -sin(&theta;<sub>i</sub>)cos(&alpha;<sub>i</sub>) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sin(&theta;<sub>i</sub>)sin(&alpha;<sub>i</sub>) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; a<sub>i</sub>cos(&theta;<sub>i</sub>) ]<br>
+    [ sin(&theta;<sub>i</sub>) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cos(&theta;<sub>i</sub>)cos(&alpha;<sub>i</sub>) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -cos(&theta;<sub>i</sub>)sin(&alpha;<sub>i</sub>) &nbsp;&nbsp;&nbsp;&nbsp; a<sub>i</sub>sin(&theta;<sub>i</sub>) ]<br>
+    [ 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sin(&alpha;<sub>i</sub>) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cos(&alpha;<sub>i</sub>) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; d<sub>i</sub> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]<br>
+    [ 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ]
+</div>
+
+<h3>Phương trình Động học Thuận</h3>
+<p>Tọa độ điểm gắp T<sub>EE</sub> so với chân đế (Base) là tích của 6 ma trận nhân với nhau:</p>
+<div class="formula">T<sub>EE</sub> = T1 &times; T2 &times; T3 &times; T4 &times; T5 &times; T6</div>
+<p>Ma trận kết quả có dạng:</p>
+<div class="formula">
+    T<sub>EE</sub> = <br><br>
+    [ R11 &nbsp;&nbsp; R12 &nbsp;&nbsp; R13 &nbsp;&nbsp; Px ]<br>
+    [ R21 &nbsp;&nbsp; R22 &nbsp;&nbsp; R23 &nbsp;&nbsp; Py ]<br>
+    [ R31 &nbsp;&nbsp; R32 &nbsp;&nbsp; R33 &nbsp;&nbsp; Pz ]<br>
+    [ 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1 &nbsp;&nbsp; ]
+</div>
+<p>Trong đó <strong>(Px, Py, Pz)</strong> chính là tọa độ XYZ cần tìm.</p>
+
+<h2>3. Động Học Nghịch (Inverse Kinematics - IK)</h2>
+<p><strong>Bài toán:</strong> Cho tọa độ XYZ và hướng nghiêng mong muốn của mũi gắp, tìm ngược lại 6 góc quay &theta;1 đến &theta;6. Hệ thống sử dụng phương pháp Giải tích hình học (Geometric Closed-form).</p>
+
+<h3>Bước 1: Tìm tọa độ Tâm Cổ Tay (Wrist Center)</h3>
+<p>Tâm cổ tay P<sub>05</sub> là giao điểm của trục 4, 5, 6. Từ tọa độ End-Effector và vector hướng, ta lùi lại một đoạn d6 (với d6 = 0.0996 m):</p>
+<div class="formula">P<sub>05</sub> = [Px, Py, Pz] - 0.0996 &times; [R13, R23, R33]</div>
+
+<h3>Bước 2: Giải Khớp 1 (&theta;1)</h3>
+<p>Nhìn từ trên xuống mặt phẳng XY, tay máy vẽ thành một hình chiếu tam giác:</p>
+<div class="formula">&theta;1 = atan2(P05y, P05x) &plusmn; acos(0.1333 / &radic;(P05x&sup2; + P05y&sup2;)) &plusmn; 90&deg;</div>
+<p><em>(Cho ra 2 nghiệm: Cấu hình Vai trái hoặc Vai phải)</em></p>
+
+<h3>Bước 3: Giải Khớp 5 (&theta;5) và Khớp 6 (&theta;6)</h3>
+<p>Dựa vào Khớp 1, ta tách được &theta;5:</p>
+<div class="formula">
+    cos(&theta;5) = (Px &times; sin(&theta;1) - Py &times; cos(&theta;1) - 0.1333) / 0.0996 <br>
+    &theta;5 = &plusmn; acos( cos(&theta;5) )
+</div>
+<p><em>(Ra 2 nghiệm: Cổ tay vểnh lên hoặc cụp xuống)</em>. Từ &theta;5 dễ dàng tính được &theta;6 qua hàm atan2.</p>
+
+<h3>Bước 4: Giải Khớp 3 (&theta;3) bằng Định lý Hàm Cosin</h3>
+<p>Khớp 2, 3 và 4 song song với nhau. Lấy khoảng cách L, áp dụng định lý hàm số Cosin cho tam giác (a2 = -0.4250, a3 = -0.3922, L):</p>
+<div class="formula">
+    cos(&theta;3) = (L&sup2; - (-0.4250)&sup2; - (-0.3922)&sup2;) / (2 &times; (-0.4250) &times; (-0.3922)) <br>
+    &theta;3 = &plusmn; acos( cos(&theta;3) )
+</div>
+<p><em>(Ra 2 nghiệm: Khuỷu tay gập lên - Elbow Up, hoặc gập xuống - Elbow Down)</em></p>
+
+<h3>Bước 5: Giải Khớp 2 (&theta;2) và Khớp 4 (&theta;4)</h3>
+<p>Tam giác đã được giải, &theta;2 tính qua hàm atan2. Khớp 4 tính bằng cách lấy Tổng góc nghiêng mặt phẳng trừ đi góc của khớp 2 và 3:</p>
+<div class="formula">&theta;4 = &theta;_sum - &theta;2 - &theta;3</div>
+
+</body>
+</html>

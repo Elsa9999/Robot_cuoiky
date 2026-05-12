@@ -1,0 +1,208 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 15">
+<title>Bao cao</title>
+<style>
+body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.6; margin: 2cm; }
+h1 { color: #1F4E79; font-size: 18pt; border-bottom: 2px solid #1F4E79; padding-bottom: 6px; }
+h2 { color: #2E74B5; font-size: 16pt; margin-top: 24px; }
+h3 { color: #2E74B5; font-size: 14pt; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+th { background-color: #2E74B5; color: white; padding: 8px 12px; text-align: left; border: 1px solid #2E74B5; }
+td { padding: 8px 12px; border: 1px solid #ccc; }
+tr:nth-child(even) { background-color: #f2f7fb; }
+code { background-color: #f4f4f4; padding: 2px 6px; font-family: Consolas, monospace; font-size: 11pt; }
+pre { background-color: #f4f4f4; padding: 12px; border-left: 4px solid #2E74B5; overflow-x: auto; font-family: Consolas, monospace; font-size: 10pt; line-height: 1.4; }
+blockquote { background: #e8f4fd; border-left: 6px solid #2E74B5; margin: 16px 0; padding: 12px 16px; font-style: italic; }
+strong { color: #1F4E79; }
+hr { border: none; border-top: 1px solid #ccc; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1>BÁO CÁO KỸ THUẬT: CƠ CHẾ HOẠT ĐỘNG CỦA VACUUM GRIPPER (GIÁC HÚT CHÂN KHÔNG)</h1>
+<p><strong>File mã nguồn:</strong> <code>simulation/gripper.py</code><br />
+<strong>Lớp chính:</strong> <code>VacuumGripper</code><br />
+<strong>Phiên bản:</strong> UR5e Pick &amp; Place Simulation</p>
+<hr />
+<h2>1. Đặt vấn đề</h2>
+<p>Trong hệ thống tự động hóa công nghiệp, cơ cấu gắp vật (End-Effector) là thành phần cuối cùng trên cánh tay robot, chịu trách nhiệm tương tác trực tiếp với vật thể. Đồ án sử dụng <strong>Giác hút chân không (Vacuum Gripper)</strong> — một loại End-Effector phổ biến trong ngành đóng gói, lắp ráp linh kiện điện tử và xử lý vật phẳng.</p>
+<h3>1.1 Nguyên lý hoạt động trong thực tế</h3>
+<p>Trong nhà máy thực tế, Vacuum Gripper hoạt động dựa trên nguyên lý chênh lệch áp suất:</p>
+<ol>
+<li><strong>Bơm chân không (Vacuum Pump)</strong> tạo áp suất âm bên trong đường ống dẫn khí.</li>
+<li><strong>Giác hút (Suction Cup)</strong> — thường làm bằng cao su mềm — áp sát lên bề mặt vật thể.</li>
+<li>Áp suất khí quyển bên ngoài lớn hơn áp suất bên trong giác hút, tạo ra <strong>lực ép giữ vật</strong> dính chặt vào đầu robot.</li>
+<li>Khi cần nhả, van xả khí mở ra, cân bằng áp suất → vật thể rơi tự do.</li>
+</ol>
+<h3>1.2 Tại sao chọn Vacuum Gripper thay vì Tay kẹp cơ khí?</h3>
+<table>
+<thead>
+<tr>
+<th>Tiêu chí</th>
+<th>Vacuum Gripper</th>
+<th>Tay kẹp 2 ngón (2-Finger)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Độ phức tạp mô phỏng</td>
+<td><strong>Thấp</strong> — chỉ cần 1 Constraint</td>
+<td>Cao — phải mô phỏng lực ma sát, diện tích tiếp xúc</td>
+</tr>
+<tr>
+<td>Tốc độ tính toán</td>
+<td><strong>Nhanh</strong> — không thêm bậc tự do</td>
+<td>Chậm — thêm 2 motor servo</td>
+</tr>
+<tr>
+<td>Phù hợp cho RL</td>
+<td><strong>Rất tốt</strong> — loại bỏ biến nhiễu</td>
+<td>Trung bình — AI phải học thêm lực kẹp</td>
+</tr>
+<tr>
+<td>Ứng dụng công nghiệp</td>
+<td>Đóng gói, bốc xếp hàng</td>
+<td>Lắp ráp chính xác</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Kết luận:</strong> Vacuum Gripper được lựa chọn vì phù hợp với bài toán Pick &amp; Place (gắp-đặt), đồng thời đơn giản hóa quá trình huấn luyện AI mà không ảnh hưởng đến tính chân thực của mô phỏng.</p>
+<hr />
+<h2>2. Phương pháp mô phỏng trong PyBullet</h2>
+<p>Trong Engine vật lý PyBullet, không tồn tại mô hình áp suất khí động học. Do đó, việc mô phỏng giác hút được thực hiện bằng kỹ thuật <strong>Ràng buộc vật lý cứng (JOINT_FIXED Constraint)</strong> — một cơ chế cho phép "khóa cứng" hai vật thể lại với nhau trong không gian 3D.</p>
+<h3>2.1 Cơ chế Kích hoạt — Hàm <code>activate(object_id)</code></h3>
+<p>Khi hệ thống ra lệnh "hút vật", hàm <code>activate()</code> thực hiện 4 bước theo trình tự:</p>
+<p><strong>Bước 1: Thu thập tọa độ tuyệt đối (World Frame)</strong></p>
+<p>Hệ thống đọc đồng thời vị trí và hướng xoay (Position + Orientation) của cả mũi kẹp End-Effector (EE) và vật thể trong hệ tọa độ thế giới (World Frame):</p>
+<pre><code class="language-python"># Lấy pose EE hiện tại
+link_state = p.getLinkState(self._robot_id, self._ee_link,
+                            computeForwardKinematics=True)
+ee_pos = link_state[4]   # Vị trí tuyệt đối (x, y, z)
+ee_orn = link_state[5]   # Hướng xoay tuyệt đối (quaternion)
+
+# Lấy pose vật thể
+obj_pos, obj_orn = p.getBasePositionAndOrientation(object_id)
+</code></pre>
+<p><strong>Bước 2: Tính nghịch đảo ma trận biến đổi của EE</strong></p>
+<p>Sử dụng hàm <code>p.invertTransform()</code> để tính ma trận nghịch đảo T⁻¹ (EE) — tức là "đảo ngược hệ tọa độ" của mũi kẹp:</p>
+<pre><code class="language-python">inv_ee_pos, inv_ee_orn = p.invertTransform(ee_pos, ee_orn)
+</code></pre>
+<p><strong>Bước 3: Nhân ma trận để tìm Offset cục bộ (Local Frame)</strong></p>
+<p>Nhân ma trận nghịch đảo EE với tọa độ tuyệt đối của vật thể, kết quả trả về chính là <strong>vị trí của vật thể dưới góc nhìn cục bộ của mũi kẹp</strong>:</p>
+<pre><code class="language-python">obj_local_pos, obj_local_orn = p.multiplyTransforms(
+    inv_ee_pos, inv_ee_orn,   # Ma trận nghịch đảo EE
+    obj_pos,    obj_orn       # Tọa độ vật thể (World)
+)
+</code></pre>
+<p>Về mặt toán học, phép tính này tương đương với:</p>
+<p><strong>T_local = T⁻¹(EE) × T(Object)</strong></p>
+<p>trong đó T là ma trận biến đổi thuần nhất 4×4 (Homogeneous Transformation Matrix).</p>
+<p><strong>Bước 4: Tạo ràng buộc JOINT_FIXED với Offset đã tính</strong></p>
+<pre><code class="language-python">self._constraint = p.createConstraint(
+    parentBodyUniqueId     = self._robot_id,    # Cha: Robot UR5e
+    parentLinkIndex        = self._ee_link,      # Khâu cha: Mũi kẹp EE
+    childBodyUniqueId      = object_id,          # Con: Vật thể cần gắp
+    childLinkIndex         = -1,                 # -1 = gốc vật thể
+    jointType              = p.JOINT_FIXED,      # Loại: Khóa cứng
+    jointAxis              = [0, 0, 0],          # Không có trục xoay
+    parentFramePosition    = obj_local_pos,      # ← Offset cục bộ đã tính
+    childFramePosition     = [0, 0, 0],          # Gốc vật thể
+    parentFrameOrientation = obj_local_orn       # ← Hướng xoay cục bộ
+)
+p.changeConstraint(self._constraint, maxForce=500)  # Lực giữ tối đa 500N
+</code></pre>
+<p><strong>Ý nghĩa:</strong> Sau bước này, vật thể sẽ bị "đóng băng" tại đúng vị trí tiếp xúc ban đầu so với mũi kẹp. Khi robot di chuyển, vật thể sẽ di chuyển cùng, giống hệt như bị hút dính trong thực tế.</p>
+<hr />
+<h2>3. Điểm nhấn Kỹ thuật: Khắc phục sự cố "Physics Explosion"</h2>
+<p>Đây là một trong những lỗi nghiêm trọng nhất mà sinh viên thường gặp khi lập trình Vacuum Gripper trong môi trường mô phỏng vật lý.</p>
+<h3>3.1 Mô tả vấn đề</h3>
+<p>Nếu lập trình viên bỏ qua bước tính Offset (Bước 2 và 3 ở trên) và chỉ đơn giản nối trực tiếp tâm EE với tâm vật thể:</p>
+<pre><code class="language-python"># ❌ SAI — Cách làm naive
+p.createConstraint(
+    ...
+    parentFramePosition = [0, 0, 0],   # Tâm EE
+    childFramePosition  = [0, 0, 0],   # Tâm vật
+    ...
+)
+</code></pre>
+<p>Hậu quả xảy ra ngay lập tức trong 1 bước vật lý (1/240 giây):</p>
+<ol>
+<li><strong>Teleportation (Dịch chuyển tức thời):</strong> Vật thể bị kéo giật về đúng tâm của mũi kẹp EE.</li>
+<li><strong>Collision Penetration (Lồng ghép va chạm):</strong> Thân vật thể chui vào bên trong thân mũi kẹp, vi phạm luật va chạm.</li>
+<li><strong>Physics Explosion (Bùng nổ vật lý):</strong> Engine PyBullet phát hiện sự lồng ghép này và tạo ra một <strong>lực đẩy cực lớn</strong> (Impulse) để tách hai vật ra. Lực này có thể lên tới hàng nghìn Newton, khiến vật thể bị bắn văng ra xa khỏi không gian làm việc.</li>
+</ol>
+<h3>3.2 Giải pháp: Local Transformation Offset</h3>
+<p>Giải pháp đã được triển khai trong đồ án (như trình bày ở Mục 2.1) sử dụng phép biến đổi ma trận nghịch đảo để tính toán chính xác <strong>khoảng cách tương đối (Offset)</strong> giữa mũi kẹp và vật thể <strong>tại thời điểm tiếp xúc</strong>. Ràng buộc JOINT_FIXED sau đó được tạo dựa trên Offset này thay vì tọa độ [0,0,0].</p>
+<p><strong>Kết quả:</strong> Vật thể được giữ nguyên vị trí tương đối so với mũi kẹp, không bị teleport, không lồng ghép va chạm, và hệ thống vật lý hoạt động ổn định ở tần số 240Hz suốt quá trình mô phỏng.</p>
+<hr />
+<h2>4. Cơ chế Nhả vật — Hàm <code>release()</code></h2>
+<p>Khi cần nhả vật (ví dụ: khi robot đã di chuyển vật đến thùng chứa), hàm <code>release()</code> thực hiện:</p>
+<pre><code class="language-python">def release(self):
+    if self._constraint is not None:
+        p.removeConstraint(self._constraint)   # Xóa mối nối cứng
+        self._constraint = None
+    self._object_id = None
+    self._activated = False
+</code></pre>
+<p>Ngay khi <code>p.removeConstraint()</code> được gọi, vật thể không còn bị ràng buộc với EE. Nó ngay lập tức chịu tác dụng của trọng lực (g = -9.81 m/s²) và rơi tự do xuống dưới — đúng với hành vi thực tế khi van xả khí của giác hút mở ra.</p>
+<hr />
+<h2>5. Trực quan hóa trạng thái — Hàm <code>draw_indicator()</code></h2>
+<p>Để hỗ trợ quá trình giám sát, gỡ lỗi (debugging) và trình diễn, hệ thống tích hợp một vòng tròn tín hiệu 3D được vẽ trực tiếp tại vị trí mũi kẹp trong không gian mô phỏng:</p>
+<table>
+<thead>
+<tr>
+<th>Màu sắc</th>
+<th>Trạng thái</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Xanh lá (Green)</strong></td>
+<td>Đang kích hoạt (Activated)</td>
+<td>Constraint đã kết nối, vật đang bị giữ</td>
+</tr>
+<tr>
+<td><strong>Đỏ (Red)</strong></td>
+<td>Nghỉ / Đã nhả (Released)</td>
+<td>Không có Constraint, sẵn sàng gắp mới</td>
+</tr>
+</tbody>
+</table>
+<p>Vòng tròn được vẽ bằng 8 đoạn thẳng (<code>addUserDebugLine</code>) tạo thành hình bát giác đều với bán kính 3cm, cập nhật vị trí liên tục theo chuyển động của EE.</p>
+<hr />
+<h2>6. Tích hợp với hệ thống tổng thể</h2>
+<p>Lớp <code>VacuumGripper</code> được sử dụng bởi cả 3 chế độ vận hành của hệ thống:</p>
+<table>
+<thead>
+<tr>
+<th>Chế độ</th>
+<th>Ai gọi <code>activate()</code>/<code>release()</code>?</th>
+<th>Cách hoạt động</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Manual</strong></td>
+<td>Người dùng nhấn phím trên bàn phím</td>
+<td>Gọi trực tiếp qua HMI</td>
+</tr>
+<tr>
+<td><strong>Auto (FSM)</strong></td>
+<td>Máy trạng thái <code>PickPlaceStateMachine</code></td>
+<td>Gọi tự động tại bước PICK và RELEASE</td>
+</tr>
+<tr>
+<td><strong>AI (SAC)</strong></td>
+<td>Môi trường <code>UR5ePickPlaceEnv</code> (Hybrid Gripper)</td>
+<td>Tự động khi EE gần vật &lt; 4.5cm hoặc gần bin &lt; 5cm</td>
+</tr>
+</tbody>
+</table>
+<p>Lực giữ tối đa được thiết lập là <strong>500 Newton</strong> (<code>maxForce=500</code>), đảm bảo vật thể không bị tuột trong quá trình di chuyển tốc độ cao, đồng thời đủ nhỏ để không gây ra hiệu ứng vật lý bất thường khi có va chạm ngoài ý muốn.</p>
+</body>
+</html>

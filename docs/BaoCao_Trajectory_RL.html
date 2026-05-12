@@ -1,0 +1,67 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Báo cáo</title>
+<style>
+body {
+    font-family: 'Times New Roman', serif;
+    font-size: 13pt;
+    line-height: 1.5;
+}
+h1 { color: #2E74B5; font-size: 18pt; }
+h2 { color: #2E74B5; font-size: 16pt; }
+h3 { color: #2E74B5; font-size: 14pt; }
+blockquote {
+    background: #f9f9f9;
+    border-left: 10px solid #ccc;
+    margin: 1.5em 10px;
+    padding: 0.5em 10px;
+}
+</style>
+</head>
+<body>
+<h1>BÁO CÁO KỸ THUẬT: QUY HOẠCH QUỸ ĐẠO VÀ TÍCH HỢP HỌC TĂNG CƯỜNG (RL)</h1>
+<p>Dự án này sử dụng hai cách tiếp cận khác nhau để điều khiển chuyển động (Trajectory Planning) của cánh tay robot UR5e, tùy thuộc vào chế độ vận hành (Auto truyền thống và AI).</p>
+<hr />
+<h2>1. Quy hoạch Quỹ đạo trong Chế độ Auto (Máy trạng thái FSM)</h2>
+<p>Ở chế độ Auto truyền thống, robot thực thi công việc dựa trên một máy trạng thái (FSM) gồm 11 bước lập trình sẵn (từ Approach, Pick đến Place).</p>
+<h3>Kỹ thuật sử dụng:</h3>
+<ul>
+<li><strong>Hàm nội suy hình thang vận tốc (Trapezoidal Velocity Profile):</strong> 
+    Để đi từ điểm A đến điểm B, hệ thống không cấp tọa độ B ngay lập tức (vì sẽ làm tay máy bị giật cục/jerk). Thay vào đó, bộ quy hoạch (Trajectory Executor) chia nhỏ đoạn đường ra làm nhiều điểm waypoint theo một biểu đồ hình thang:<ul>
+<li><strong>Tăng tốc (Acceleration):</strong> Robot từ từ đạt vận tốc tối đa.</li>
+<li><strong>Giữ đều (Constant Velocity):</strong> Lướt qua phần lớn quãng đường.</li>
+<li><strong>Giảm tốc (Deceleration):</strong> Từ từ phanh lại trước khi chạm điểm B.</li>
+</ul>
+</li>
+<li><strong>IK Liên tục:</strong> Tại mỗi waypoint nội suy, Động học nghịch (IK) được gọi để dịch tọa độ XYZ thành 6 góc xoay khớp, rồi chuyển xuống Engine để thực thi (sử dụng phương thức <code>POSITION_CONTROL</code>).</li>
+</ul>
+<hr />
+<h2>2. Quy hoạch Quỹ đạo bằng Học tăng cường (Reinforcement Learning - SAC)</h2>
+<p>Ở chế độ AI, robot không đi theo các waypoint được tính sẵn. Nó tự học cách "lái" mũi kẹp về phía vật thể dựa trên Thuật toán <strong>SAC (Soft Actor-Critic)</strong>.</p>
+<h3>a) Không gian Quan sát (Observation Space) - 20D</h3>
+<p>Robot (Agent) quan sát môi trường ở mỗi khung hình (frame) bằng mảng dữ liệu 20 chiều:
+1.  <strong>Tọa độ nội tại:</strong> Vị trí (x,y,z) và Góc quay (Euler) của mũi kẹp.
+2.  <strong>Môi trường:</strong> Vị trí tương đối từ mũi kẹp đến vật thể (Rel-Obj) và đến thùng chứa (Rel-Bin).
+3.  <strong>Trạng thái:</strong> Tình trạng của Giác hút (đang rảnh hay đang ngậm vật).</p>
+<p><em>(Lưu ý: Dữ liệu này được chuẩn hóa bởi màng lọc <code>VecNormalize</code> để giúp AI hội tụ nhanh và ổn định hơn).</em></p>
+<h3>b) Không gian Hành động (Action Space) - 7D</h3>
+<p>Mạng Neural xuất ra một mảng 7 chiều quyết định bước đi tiếp theo.
+Thay vì xuất ra một tọa độ đích cụ thể, AI xuất ra các <strong>Gia số dịch chuyển (Cartesian Offsets)</strong>. 
+- Môi trường sẽ nhận các gia số này, cộng vào vị trí hiện tại (ví dụ: $x_{new} = x_{old} + \Delta x$), sau đó đưa qua IK để dịch thành góc khớp.
+- Điều này biến hành động của AI giống như một "Phi công" đẩy cần gạt joystick liên tục để lái mũi kẹp đến đích.</p>
+<h3>c) Kiến trúc "Hybrid Gripper"</h3>
+<p>Trong các bài toán RL kinh điển, việc dạy AI học cách tự đóng/mở kẹp rất khó vì AI hay bị hiện tượng <strong>Reward Hacking</strong> (tức là nó tới gần vật, hút vật, rồi nhả luôn để lấy điểm lẻ tẻ thay vì đem đi bỏ vào thùng).</p>
+<p><strong>Giải pháp đột phá của đồ án:</strong> 
+Sử dụng kiến trúc <strong>Hybrid Gripper</strong> (Kẹp lai). 
+- AI <strong>chỉ học cách điều hướng (Navigation)</strong> không gian.
+- Khâu <strong>đóng/mở kẹp (Grasp/Release)</strong> được tách ra cho môi trường (Environment) tự động quyết định dựa trên quy tắc logic (Rule-based): Khi khoảng cách từ mũi kẹp đến vật thể $&lt; 2cm$, kẹp sẽ tự động dính. Khi đến miệng thùng (Bin), kẹp sẽ tự động nhả.
+- <strong>Ý nghĩa:</strong> Giải phóng mạng Neural khỏi một bậc tự do phức tạp, giúp AI tập trung 100% tài nguyên vào việc học quỹ đạo đường đi mượt mà nhất.</p>
+<hr />
+<blockquote>
+<p><strong>💡 Note cho hội đồng bảo vệ:</strong> "Thay vì ép AI phải tự tìm ra thuật toán Động học (bằng cách dùng trực tiếp mô-men xoắn hay góc xoay ở Action Space), em đã lồng ghép hàm IK của mình vào bên dưới (Under the hood). Nghĩa là AI chỉ việc suy nghĩ ở cấp độ cao là tọa độ không gian (X, Y, Z), còn phần tính góc khớp phức tạp đã có bộ IK giải. Điều này minh chứng cho sự kết hợp thành công giữa Toán học Robot Cổ điển và AI Hiện đại trong đồ án."</p>
+</blockquote>
+</body>
+</html>
