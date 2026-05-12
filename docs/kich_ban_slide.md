@@ -187,37 +187,35 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 
 ---
 
-## SLIDE 11 — GIỚI THIỆU HỌC TĂNG CƯỜNG
+## SLIDE 11 — ỨNG DỤNG AI VÀO ĐIỀU HƯỚNG QUỸ ĐẠO
 **Nội dung:**
-- Định nghĩa: Agent tương tác với Environment, nhận Reward, tự học tối ưu
-- Vòng lặp: State → Action → Reward → State' → Update Neural Network
-- Khác với Deep Learning truyền thống: không cần dữ liệu gán nhãn
+- Tại sao dùng AI? Chế độ Auto rất tốt nhưng khi vật bị xê dịch khỏi vị trí lập trình sẵn, hệ thống FSM sẽ báo lỗi. AI giúp robot tự xoay sở tìm đường linh hoạt.
+- Lựa chọn thuật toán: Nhóm chọn Soft Actor-Critic (SAC). Điểm mạnh của SAC là điều khiển góc xoay động cơ theo tín hiệu liên tục (Continuous Action) vô cùng trơn tru, phù hợp điều khiển cánh tay robot.
+- Kiến trúc mạng: 1 mạng Actor (chuyên ra quyết định bay đi đâu) và 2 mạng Critics (chấm điểm xem đường bay đó tốt hay dở).
 
-**Hình ảnh:** Sơ đồ vòng lặp RL:
+**Hình ảnh:** Sơ đồ vòng lặp Agent (SAC) ↔ Environment:
 ```
-       ┌──── action a_t ────►┐
-       │                      │
-   [Agent]              [Environment]
-       │                      │
-       └◄── reward r_t ──────┘
-       └◄── state s_{t+1} ───┘
+       ┌──── Continuous Action (ΔXYZ, ΔRPY) ────►┐
+       │                                         │
+   [Actor SAC]                              [PyBullet]
+       │                                         │
+       └◄────────── Reward & 20D State ──────────┘
 ```
 
 ---
 
-## SLIDE 12 — THUẬT TOÁN SAC
+## SLIDE 12 — CƠ CHẾ HYBRID GRIPPER & PHYSICS CLAMP
 **Nội dung:**
-- SAC = Soft Actor-Critic (Off-Policy, Continuous Action)
-- 3 mạng: Actor (ra hành động) + 2 Critics (đánh giá)
-- Đặc biệt: Entropy regularization — tự cân bằng khai thác/khám phá
-- Tại sao chọn SAC? Sample-efficient, ổn định, liên tục
+- Để AI không bị "ngáo", nhóm áp dụng 2 đột phá cơ điện tử thay vì phó mặc 100% cho AI:
+- Đột phá 1 (Hybrid Gripper): AI KHÔNG được quyền bật/tắt giác hút chân không. Việc này do cảm biến tiệm cận phụ trách (cách <4.5cm thì hút, tới nắp thùng thì nhả). AI chỉ tập trung 100% vào việc lái cánh tay.
+- Đột phá 2 (Physics-level Euler Clamp): Gốc tọa độ cổ tay bị kẹp chặt bằng thuật toán vật lý. Góc nghiêng (Roll-Pitch) chỉ được dao động ±15°, ép cánh tay luôn ở tư thế 90° chúc thẳng xuống mặt bàn chuẩn xác như Auto.
 
-**Hình ảnh:** Kiến trúc mạng:
+**Hình ảnh:**
 ```
-Obs (20D) ──► Actor [256→256] ──► Action (7D)
-          ──► Critic₁ [256→256] ──► Q₁
-          ──► Critic₂ [256→256] ──► Q₂
-          ──► α (auto-tuned entropy)
+[Physics Clamp] ──► Giữ thẳng tay 90°
+[Hybrid Gripper] ─► Cảm biến tự động hút/nhả
+       │
+      Tạo môi trường an toàn để AI chỉ tập trung học Lái (Navigate)
 ```
 
 ---
@@ -264,7 +262,7 @@ Obs (20D) ──► Actor [256→256] ──► Action (7D)
 └─────────────────────────────────┘
 ```
 
-**Lưu ý đột phá:** Góc xoay nghiêng (EE Orientation) được kẹp chặt ±15° trực tiếp ở Môi trường Vật lý (Physics clamp), giúp Hàm Reward đơn giản hóa toàn diện, AI chỉ tập trung bay XYZ mà vẫn 100% giữ tư thế công nghiệp!
+**Lưu ý đột phá:** Nhờ 2 cơ chế Hybrid Gripper tự hút/nhả và Physics Clamp giữ thẳng tay (vừa trình bày ở slide trước), hàm Reward của nhóm được tối giản cực kỳ gọn nhẹ, AI hoàn toàn không có cơ hội "Reward Hacking" (gian lận điểm).
 
 ---
 

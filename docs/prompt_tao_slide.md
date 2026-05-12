@@ -104,17 +104,15 @@ Sơ đồ 3 tầng (block diagram):
 - Sơ đồ: IDLE → DETECT → APPROACH → DESCEND → PICK → LIFT → MOVE_TO_BIN → PLACE → RELEASE → RETREAT → DONE
 - Mỗi state chạy 1 trajectory Cartesian/Joint.
 
-**SLIDE 11 — GIỚI THIỆU HỌC TĂNG CƯỜNG:**
-- Agent tương tác Environment, nhận Reward, tự học
-- Vòng lặp: State → Action → Reward → State' → Update NN
-- Khác Deep Learning: không cần dữ liệu gán nhãn
-- Sơ đồ vòng lặp RL (Agent ↔ Environment).
+**SLIDE 11 — ỨNG DỤNG AI VÀO ĐIỀU HƯỚNG QUỸ ĐẠO:**
+- Tại sao dùng AI? Thay vì lập trình tọa độ cứng nhắc, robot tự học cách bay đến mục tiêu linh hoạt.
+- Thuật toán: Soft Actor-Critic (SAC). Chọn SAC vì nó xuất ra lệnh điều khiển động cơ liên tục (Continuous Action) cực kỳ trơn tru, rất phù hợp cho Robot công nghiệp.
+- Kiến trúc mạng nơ-ron: Actor (quyết định bước đi) + 2 Critics (đánh giá quỹ đạo).
 
-**SLIDE 12 — THUẬT TOÁN SAC:**
-- SAC = Soft Actor-Critic (Off-Policy, Continuous Action)
-- 3 mạng: Actor + 2 Critics
-- Entropy regularization: tự cân bằng khai thác/khám phá
-- Kiến trúc: Obs (20D) → Actor [256→256] → Action (7D), Critic₁ [256→256] → Q₁, Critic₂ [256→256] → Q₂, α auto-tuned
+**SLIDE 12 — CƠ CHẾ HYBRID GRIPPER & PHYSICS CLAMP:**
+Để AI có thể hoạt động như robot công nghiệp thực thụ, nhóm đã đưa ra 2 đột phá cơ điện tử:
+1. Cơ chế Hybrid Gripper: AI không được phép bật/tắt giác hút (tránh lỗi nhả rác bừa bãi). Thay vào đó, cảm biến tiệm cận sẽ tự hút khi cách vật <4.5cm, và tự nhả khi đến trên nắp thùng rác. AI chỉ làm nhiệm vụ **Điều hướng tay máy**.
+2. Physics-level Euler Clamp: Để đảm bảo tay máy không xoắn lộn xộn, gốc tọa độ bị kẹp cơ học ±15°. Trục Roll-Pitch luôn bị ép thẳng 90° chúc xuống mặt bàn.
 
 **SLIDE 13 — OBSERVATION & ACTION SPACE:**
 Observation (20D):
@@ -150,7 +148,7 @@ PHA 2 — PLACE:
 - Dense reward hạ xuống: max(0, 3.0 − dist_3d × 10.0)
 - VÀO BIN: +500 → DONE ✓
 
-Lưu ý đột phá: Physics Clamp ±15° trực tiếp trong môi trường vật lý, AI luôn giữ tư thế thẳng đứng.
+Nhờ cơ chế Hybrid Gripper tự hút/nhả và Physics Clamp kẹp thẳng đứng, hàm Reward được tối giản cực kỳ gọn nhẹ, AI không thể Reward Hacking.
 
 **SLIDE 15 — QUÁ TRÌNH TRAINING:**
 Train từ đầu (from scratch) — 1 lần duy nhất, KHÔNG dùng Curriculum Learning:

@@ -33,17 +33,17 @@
 **[SLIDE 10 - CHẾ ĐỘ AUTO FSM]**
 "Đây là chế độ điều khiển theo lập trình truyền thống. Hệ thống vận hành như một cỗ máy trạng thái (State Machine) gồm 11 bước tuần tự: từ IDLE → DETECT → APPROACH → DESCEND → PICK → LIFT → MOVE_TO_BIN → PLACE → RELEASE → RETREAT → DONE. Nó hoạt động với độ thành công 100%, nhưng nhược điểm là cứng nhắc: nếu vật rơi ra khỏi vùng cấu hình cho trước, nó sẽ không biết cách tự xoay sở."
 
-**[SLIDE 11 - GIỚI THIỆU HỌC TĂNG CƯỜNG]**
-"Để giải quyết sự cứng nhắc đó, em chuyển sang sử dụng Học tăng cường (Reinforcement Learning). Không cần lập trình tọa độ cụ thể, robot sẽ tự biến mình thành một điệp viên: Nhìn vào môi trường (State), Giao quyết định (Action), và nhận Điểm thưởng/phạt (Reward) để cải thiện hiệu suất sau hàng triệu lần sai nghiệm."
+**[SLIDE 11 - ỨNG DỤNG AI VÀO ĐIỀU HƯỚNG QUỸ ĐẠO]**
+"Để giải quyết sự cứng nhắc của FSM, nhóm chuyển sang sử dụng Học tăng cường. Tuy nhiên, thay vì sa đà vào các thuật toán AI phức tạp, nhóm xem AI như một 'Blackbox' để giải quyết bài toán cốt lõi: Điều hướng linh hoạt. Thuật toán được chọn là Soft Actor-Critic (SAC). Ưu điểm tuyệt đối của SAC trong kỹ thuật Robot là nó hỗ trợ 'Continuous Action' - tức là điều khiển dòng điện, vận tốc, góc xoay của động cơ một cách liên tục và cực kỳ trơn tru."
 
-**[SLIDE 12 - THUẬT TOÁN SAC]**
-"Thuật toán cốt lõi được chọn là Soft Actor-Critic (SAC). Sự vượt trội của SAC nằm ở chỗ nó không chỉ tối đa hóa Phần thưởng, mà còn tối đa hóa 'Entropy' – tức là luôn khuyến khích agent tìm tòi nhiều quỹ đạo bay mới. Kiến trúc của nó bao gồm mạng Nơ-ron Actor quyết định bước đi và 2 mạng Critic đánh giá độ hiệu quả."
+**[SLIDE 12 - CƠ CHẾ HYBRID GRIPPER & PHYSICS CLAMP] (Nhấn mạnh tư duy Cơ điện tử)**
+"Để AI không bay lượn hoang dại, nhóm không phó mặc hoàn toàn cho mạng nơ-ron mà áp dụng 2 quy tắc vật lý. Thứ nhất là Hybrid Gripper: Cảm biến tiệm cận sẽ tự động kích hoạt van chân không khi tay máy cách vật <4.5cm. AI không được quyền bật tắt giác hút. Thứ hai là Physics Clamp: Nhóm thiết lập ràng buộc động lực học, kẹp cứng trục cổ tay không cho phép dao động quá ±15 độ. Dù AI có bay đường nào, tay máy vẫn luôn chúc thẳng đứng 90 độ y hệt tiêu chuẩn công nghiệp."
 
 **[SLIDE 13 - OBSERVATION & ACTION]**
 "Đầu vào của AI là vector 20 chiều dữ liệu, bao gồm: vị trí EE và vật thể, vector tương đối EE→Vật và Vật→Bin, Quaternion hướng vật thể, trạng thái gripper, và 3 góc Euler của cổ tay EE để giám sát tư thế. Về đầu ra, Robot xuất hành động 7 chiều gồm dịch chuyển XYZ và xoay cổ tay Roll-Pitch-Yaw. Đặc biệt, chiều thứ 7 — điều khiển gripper — hoàn toàn KHÔNG được AI sử dụng. Thay vào đó, em áp dụng cơ chế Hybrid Gripper: gripper tự động gắp khi EE gần vật dưới 4.5cm, và tự nhả khi gần bin. AI chỉ cần học cách bay tới đâu — không cần học gripper timing — loại bỏ hoàn toàn Reward Hacking."
 
 **[SLIDE 14 - THIẾT KẾ HÀM REWARD] (Nhấn mạnh sự sáng tạo ở đây)**
-"Chỗ này là thách thức lớn nhất của đồ án. Nếu chỉ dùng hàm phạt (penalty), AI sẽ chây lười và tự động hack điểm bằng cách đứng im lượn lờ. Để khắc phục, em đã giải quyết bằng một giải pháp thông minh hơn: Chuyển đổi ràng buộc vào Môi trường Vật lý, kẹp cứng giới hạn góc Euler gắp vật. Giúp Hàm Reward vô cùng đơn giản, AI chỉ tập trung hạ thấp trọng tâm mà vẫn đẩm bảo chuẩn tư thế công nghiệp."
+"Nhờ 2 cơ chế kẹp vật lý vừa trình bày ở Slide trước, việc thiết kế Hàm Phần Thưởng (Reward) của nhóm trở nên cực kỳ đơn giản và không có lỗ hổng để AI ăn gian (Reward Hacking). Hàm được chia làm 3 pha rõ rệt: Thưởng khi bay lại gần vật, Thưởng khi nhấc bổng vật lên, và Thưởng lớn khi mang vào đúng tọa độ thùng rác. AI chỉ việc tập trung hạ thấp trọng tâm tìm đường ngắn nhất."
 
 **[SLIDE 15 — QUÁ TRÌNH TRAINING]**
 "Về quá trình huấn luyện, em chỉ thực hiện một lần training duy nhất từ đầu — from scratch — bằng script train_17d_place.py, không sử dụng Curriculum Learning hay Transfer Learning. Điều này khả thi nhờ 3 đột phá thiết kế: Thứ nhất, Hybrid Gripper giúp AI không cần học gripper timing. Thứ hai, Phase-Based Reward chia rõ 3 giai đoạn Approach → Carry → Place. Thứ ba, Physics-Level Euler Clamp kẹp trực tiếp góc Roll và Pitch trong hàm vật lý, ép tay máy luôn thẳng đứng mà không cần hàm phạt phức tạp. Ngoài ra, VecNormalize chuẩn hóa observation và reward tự động, giúp hội tụ ổn định. File train_17d_grasp.py tồn tại trong repo như bản thiết kế Curriculum 2 giai đoạn, nhưng thực tế không cần sử dụng vì train_17d_place.py đã hội tụ tốt từ đầu."
