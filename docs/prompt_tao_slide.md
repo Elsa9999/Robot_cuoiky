@@ -48,7 +48,7 @@ Mục lục 7 phần:
 1. Mô phỏng 3D robot UR5e (PyBullet)
 2. Tự lập trình FK/IK theo DH convention
 3. 3 chế độ: Manual · Auto · AI
-4. Train AI bằng SAC + Curriculum Learning
+4. Train AI bằng SAC (Huấn luyện 1 phase từ đầu)
 5. Giao diện HMI chuyên nghiệp (PyQt5)
 
 **SLIDE 5 — CÔNG NGHỆ SỬ DỤNG:**

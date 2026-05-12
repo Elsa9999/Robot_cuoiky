@@ -51,7 +51,7 @@
 1. ✅ Xây dựng mô phỏng 3D robot UR5e (PyBullet)
 2. ✅ Tự lập trình FK/IK theo DH convention (không dùng black-box)
 3. ✅ 3 chế độ điều khiển: Manual · Auto · AI
-4. ✅ Train AI bằng SAC + Curriculum Learning
+4. ✅ Train AI bằng SAC (Huấn luyện 1 phase từ đầu)
 5. ✅ Giao diện HMI chuyên nghiệp (PyQt5)
 
 **Hình ảnh:** Screenshot giao diện HMI với 4 tab
