@@ -94,48 +94,39 @@
 
 ---
 
-## SLIDE 7 — ĐỘNG HỌC THUẬN (FK)
+## SLIDE 7 — ĐẶT TRỤC VÀ BẢNG DH
 **Nội dung:**
-- Quy ước DH: nhân chuỗi 6 ma trận biến đổi thuần nhất 4×4
-- Công thức: `T_EE = T₁ × T₂ × T₃ × T₄ × T₅ × T₆`
-- T_i = `Rot_z(θ_i) × Trans_z(d_i) × Trans_x(a_i) × Rot_x(α_i)`
-
-**Bảng tham số DH của UR5e:**
-| Khớp | a (m) | d (m) | α (rad) | Chức năng |
-|---|---|---|---|---|
-| 1 | 0.0000 | 0.1625 | π/2 | Shoulder Pan |
-| 2 | −0.4250 | 0.0000 | 0 | Shoulder Lift |
-| 3 | −0.3922 | 0.0000 | 0 | Elbow |
-| 4 | 0.0000 | 0.1333 | π/2 | Wrist 1 |
-| 5 | 0.0000 | 0.0997 | −π/2 | Wrist 2 |
-| 6 | 0.0000 | 0.0996 | 0 | Wrist 3 |
+- Thiết lập hệ trục tọa độ XYZ tại từng khớp theo đúng quy tắc Denavit-Hartenberg.
+- Trích xuất tự động thông số cấu trúc (a, d, α) từ file thiết kế chuẩn gốc `ur5e.urdf`.
+- **Lưu ý hội đồng:** Các thông số $a_4, a_5, a_6 = 0$ vì cụm cổ tay của UR5e là Spherical Wrist (các trục cắt nhau tại 1 điểm, không có khoảng cách vuông góc chung).
 
 **Hình ảnh đề xuất:** 
-- Hình minh họa 3D robot UR5e với các trục vector XYZ gắn tại từng khớp.
+- (Trái) Bảng DH 6 khớp với các thông số $a, d, \alpha, \theta$.
+- (Phải) Hình minh họa 3D robot UR5e với các vector trục XYZ màu Đỏ-Xanh lá-Xanh dương gắn tại từng khớp tương ứng.
 
 ---
 
-## SLIDE 7B — HIỆN THỰC BẢNG DH VÀO PYTHON & KIỂM CHỨNG MATLAB
-**Nội dung (Bảo vệ trước Hội đồng):**
-- **Đưa vào Python:** Bảng DH được thiết lập theo quy tắc gán trục cơ bản, sau đó viết hàm `dh_transform(a, d, alpha, theta)` bằng `numpy` để nhân liên tiếp 6 ma trận 4x4 theo đúng công thức $T_0^6$.
-- **Giải thích thông số:** Tại sao $a_4, a_5, a_6 = 0$? Vì ở cụm cổ tay, các trục quay cắt nhau tại 1 điểm (Spherical Wrist), triệt tiêu đường vuông góc chung. Số liệu chính xác được tham chiếu từ gốc URDF.
+## SLIDE 8 — ĐỘNG HỌC THUẬN (FK) & KIỂM CHỨNG
+**Nội dung:**
+- **Giải thuật:** Nhân liên tiếp 6 ma trận biến đổi thuần nhất 4x4.
+- Công thức: $T_{EE} = T_1 \times T_2 \times T_3 \times T_4 \times T_5 \times T_6$
+- **Code Python:** Viết hàm `forward_kinematics(q)` sử dụng thư viện `NumPy` để tính toán ma trận T cực nhanh.
 - **Kiểm chứng độc lập (Verify):** 
-  - Đưa ngược thông số DH sang phần mềm Matlab (Robotics System Toolbox / Peter Corke).
-  - Cho robot chạy về vị trí Home Pose trên cả 2 môi trường.
-  - **Kết quả:** Ma trận T cuối cùng trên Python tự code và Matlab trùng khớp 100% (sai số = 0), chứng minh phần lõi Động học do nhóm tự lập trình là tuyệt đối chính xác!
+  - So sánh kết quả tính tay (NumPy) với Engine Vật lý PyBullet.
+  - So sánh đối chiếu chéo với phần mềm Matlab (Robotics System Toolbox).
+  - Kết quả: Sai số Euclidean $\approx 0$ (Hoàn toàn trùng khớp!).
 
 **Hình ảnh đề xuất:**
-- (Trái) Snippet code mảng `dh_table` trong file `forward_kinematics.py` của bạn.
-- (Phải) Ảnh chụp màn hình Command Window của Matlab in ra ma trận kết quả kế bên Terminal của Python.
+- Một ảnh ghép gồm: (1) Đoạn code nhân ma trận `T = T @ Ti`, (2) Ảnh chụp Terminal Terminal Python báo "UNIT TEST PASS", và (3) Ảnh chụp Command Window của Matlab in ra cùng 1 kết quả ma trận T.
 
 ---
 
-## SLIDE 8 — ĐỘNG HỌC NGHỊCH (IK)
+## SLIDE 9 — ĐỘNG HỌC NGHỊCH (IK)
 **Nội dung:**
-- Bài toán: biết (x,y,z) + hướng → tìm [q1...q6]
-- Hybrid Solver 2 lớp:
-  - Lớp 1: Analytical (giải tích) → < 1ms, 8 nghiệm
-  - Lớp 2: Numerical (L-BFGS-B) → < 10ms, dùng khi Lớp 1 fail
+- Bài toán: biết vị trí $(x,y,z)$ và hướng cần vươn tới → tìm 6 góc quay $[q_1...q_6]$
+- **Giải pháp:** Xây dựng Hybrid Solver 2 lớp cực kỳ tối ưu:
+  - **Lớp 1:** Analytical (giải tích) → tốc độ < 1ms, đưa ra 8 nghiệm chính xác. Nhóm tự động chọn nghiệm ít phải xoay khớp nhất (gần cấu hình hiện tại/Home nhất).
+  - **Lớp 2:** Numerical (phương pháp số L-BFGS-B từ SciPy) → tốc độ < 10ms. Chỉ kích hoạt khi Lớp 1 không tìm thấy nghiệm (điểm kỳ dị/singularities).
 
 **Hình ảnh:** Flowchart:
 ```
@@ -152,11 +143,11 @@ Input (xyz, euler) → Analytical Solver
 
 ---
 
-## SLIDE 9 — QUY HOẠCH QUỸ ĐẠO
+## SLIDE 10 — QUY HOẠCH QUỸ ĐẠO
 **Nội dung:**
-- Joint Space: nội suy góc khớp, velocity profile hình thang
-- Cartesian Space: nội suy XYZ → gọi IK mỗi điểm → ghép Joint Traj
-- Đảm bảo v_max, a_max, chuyển tiếp mượt
+- **Joint Space (Không gian khớp):** Nội suy mượt mà các góc khớp để robot không bị giật. Sử dụng Trapezoidal Velocity Profile (Đồ thị vận tốc hình thang).
+- **Cartesian Space (Không gian làm việc):** Nội suy đường thẳng XYZ, gọi IK liên tục tại mỗi điểm trung gian để ghép thành quỹ đạo mượt (Joint Traj).
+- Đảm bảo giới hạn vận tốc tối đa ($v_{max}$) và gia tốc tối đa ($a_{max}$).
 
 **Hình ảnh:** Đồ thị velocity profile hình thang (trapezoidal):
 ```
@@ -172,11 +163,11 @@ velocity
 
 ---
 
-## SLIDE 10 — CHẾ ĐỘ AUTO (FSM)
+## SLIDE 11 — CHẾ ĐỘ AUTO (FSM)
 **Nội dung:**
-- 11 trạng thái tuần tự
-- Mỗi state chạy 1 trajectory, khi xong → chuyển state tiếp
-- Timeout 15s/state → ERROR nếu kẹt
+- Máy trạng thái hữu hạn (Finite State Machine) gồm 11 bước tuần tự khép kín.
+- Mỗi state thực thi một quỹ đạo, hoàn thành sẽ tự động chuyển sang state tiếp theo.
+- **Tính an toàn:** Tích hợp Timeout 15s/state. Nếu robot bị kẹt (Jam Detector) hoặc chờ quá lâu → Tự động báo ERROR, không để motor gồng quá tải.
 
 **Hình ảnh:** Sơ đồ FSM:
 ```
@@ -187,11 +178,11 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 
 ---
 
-## SLIDE 11 — ỨNG DỤNG AI VÀO ĐIỀU HƯỚNG QUỸ ĐẠO
+## SLIDE 12 — TẠI SAO CẦN AI (RL)?
 **Nội dung:**
-- Tại sao dùng AI? Chế độ Auto rất tốt nhưng khi vật bị xê dịch khỏi vị trí lập trình sẵn, hệ thống FSM sẽ báo lỗi. AI giúp robot tự xoay sở tìm đường linh hoạt.
-- Lựa chọn thuật toán: Nhóm chọn Soft Actor-Critic (SAC). Điểm mạnh của SAC là điều khiển góc xoay động cơ theo tín hiệu liên tục (Continuous Action) vô cùng trơn tru, phù hợp điều khiển cánh tay robot.
-- Kiến trúc mạng: 1 mạng Actor (chuyên ra quyết định bay đi đâu) và 2 mạng Critics (chấm điểm xem đường bay đó tốt hay dở).
+- **Hạn chế của Auto:** Chế độ Auto chạy rất mượt nhưng bị "cứng nhắc". Nếu chướng ngại vật xuất hiện ngẫu nhiên hoặc khay chứa đồ bị lệch, quỹ đạo đã lập trình cứng của Auto sẽ đâm thẳng gây va chạm!
+- **Giải pháp AI:** Nhóm chọn thuật toán Reinforcement Learning (Soft Actor-Critic - SAC) để thay thế khối FSM.
+- **Ưu điểm SAC:** Hoạt động trong không gian hành động liên tục (Continuous Action). AI sẽ "nhìn" môi trường (Observation) và "tự lái" (Action) tay máy mượt mà lách qua các điểm để gắp vật thả vào thùng.
 
 **Hình ảnh:** Sơ đồ vòng lặp Agent (SAC) ↔ Environment:
 ```
@@ -204,166 +195,158 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 
 ---
 
-## SLIDE 12 — CƠ CHẾ HYBRID GRIPPER & PHYSICS CLAMP
+## SLIDE 13 — CƠ CHẾ HYBRID GRIPPER & PHYSICS CLAMP
 **Nội dung:**
-- Để AI không bị "ngáo", nhóm áp dụng 2 đột phá cơ điện tử thay vì phó mặc 100% cho AI:
-- Đột phá 1 (Hybrid Gripper): AI KHÔNG được quyền bật/tắt giác hút chân không. Việc này do cảm biến tiệm cận phụ trách (cách <4.5cm thì hút, tới nắp thùng thì nhả). AI chỉ tập trung 100% vào việc lái cánh tay.
-- Đột phá 2 (Physics-level Euler Clamp): Gốc tọa độ cổ tay bị kẹp chặt bằng thuật toán vật lý. Góc nghiêng (Roll-Pitch) chỉ được dao động ±15°, ép cánh tay luôn ở tư thế 90° chúc thẳng xuống mặt bàn chuẩn xác như Auto.
+- Đặt vấn đề: Huấn luyện AI lái 6 bậc tự do (6-DoF) Pick & Place từ số 0 là vô cùng khó, AI hay bị "ngáo".
+- Để giải quyết, nhóm áp dụng **2 đột phá cơ điện tử**:
+- **Đột phá 1 (Hybrid Gripper):** AI KHÔNG được quyền điều khiển bật/tắt giác hút chân không. Việc này giao cho cảm biến tiệm cận (cách <4.5cm thì hút). AI chỉ tập trung 100% vào việc "lái".
+- **Đột phá 2 (Physics-level Euler Clamp):** Gốc tọa độ cổ tay bị kẹp chặt bằng thuật toán vật lý. Góc nghiêng (Roll-Pitch) chỉ được dao động ±15°, ép cánh tay luôn ở tư thế chúc thẳng xuống mặt bàn chuẩn xác như Auto.
 
 **Hình ảnh:**
 ```
-[Physics Clamp] ──► Giữ thẳng tay 90°
+[Physics Clamp] ──► Giữ thẳng tay (cấm xoay loạn xạ)
 [Hybrid Gripper] ─► Cảm biến tự động hút/nhả
        │
-      Tạo môi trường an toàn để AI chỉ tập trung học Lái (Navigate)
+      Tạo môi trường an toàn để AI học cực nhanh!
 ```
 
 ---
 
-## SLIDE 13 — OBSERVATION & ACTION SPACE
+## SLIDE 14 — OBSERVATION & ACTION SPACE
 **Nội dung:**
 
-**Observation (20D):**
-| 0-2 | Vị trí EE (xyz) |
-| 3-5 | Vị trí vật (xyz) |
-| 6-8 | Vector EE→Vật |
-| 9-11 | Vector Vật→Bin |
-| 12-15 | Quaternion hướng vật |
-| 16 | Trạng thái gripper |
-| 17-19 | EE euler (roll, pitch, yaw) |
+**Observation Space (20 차원 - 20D):**
+- Mắt AI nhìn thấy 20 thông số mỗi bước:
+- Vị trí EE, Vị trí vật (6D)
+- Vector khoảng cách EE→Vật và Vật→Bin (6D)
+- Hướng vật (Quaternion 4D) + Trạng thái kẹp (1D)
+- Góc nghiêng EE (Euler 3D)
 
-**Action (7D):**
-| 0-2 | Δxyz (±5cm/step) |
-| 3-5 | ΔRoll/Pitch/Yaw (±4.5°/step) |
-| 6 | *(Không sử dụng — Hybrid Gripper tự xử lý)* |
+**Action Space (7 차원 - 7D):**
+- Tín hiệu điều khiển AI xuất ra:
+- $\Delta XYZ$ (±5cm/step): Vận tốc tịnh tiến
+- $\Delta Roll/Pitch/Yaw$ (±4.5°/step): Vận tốc xoay
+- *Hành động thứ 7 (Gripper) bị vô hiệu hóa bởi Hybrid Gripper.*
 
 ---
 
-## SLIDE 14 — THIẾT KẾ HÀM REWARD (Phần quan trọng nhất!)
+## SLIDE 15 — THIẾT KẾ HÀM REWARD (Phần quan trọng nhất!)
 **Nội dung:**
-- Vấn đề: Reward Hacking — AI gian lận ăn điểm
-- Giải pháp: Phase-Based Reward
+- Vấn đề: "Reward Hacking" — AI lợi dụng kẽ hở hàm thưởng để ăn điểm lặp đi lặp lại.
+- Giải pháp: **Phase-Based Reward** (Thưởng theo 3 Giai đoạn).
 
 **Hình ảnh:** Bảng 3 pha:
 ```
 ┌─────────────────────────────────┐
 │  PHA 0 — APPROACH & GRASP      │
 │  Thưởng gần vật: +2.0          │
-│  ★ GẮP ĐƯỢC: +50 → Pha 1      │
+│  ★ GẮP ĐƯỢC: +50 → Chuyển Pha 1│
 ├─────────────────────────────────┤
 │  PHA 1 — CARRY                  │
-│  Nâng ≥ 20cm: +30              │
-│  Bay thấp: −3 (tránh va chạm)  │
-│  Gần bin XY < 15cm → Pha 2     │
+│  Nâng lên > 20cm: +30          │
+│  Phạt bay thấp: −3 (tránh bàn) │
+│  Bay tới bin: +2.0 → Chuyển Pha2│
 ├─────────────────────────────────┤
 │  PHA 2 — PLACE                  │
-│  Hạ đúng vị trí: +3.0          │
-│  ★ VÀO BIN: +500 → DONE ✓     │
+│  Hạ vào bin: +3.0              │
+│  ★ THẢ VÀO BIN: +500 → DONE ✓  │
 └─────────────────────────────────┘
 ```
-
-**Lưu ý đột phá:** Nhờ 2 cơ chế Hybrid Gripper tự hút/nhả và Physics Clamp giữ thẳng tay (vừa trình bày ở slide trước), hàm Reward của nhóm được tối giản cực kỳ gọn nhẹ, AI hoàn toàn không có cơ hội "Reward Hacking" (gian lận điểm).
+- **Lưu ý:** Nhờ kết hợp Hybrid Gripper + Physics Clamp, hàm Reward được đơn giản hóa đi rất nhiều, triệt tiêu hoàn toàn khả năng Reward Hacking. AI hiểu rõ mục tiêu từng phase.
 
 ---
 
-## SLIDE 15 — QUÁ TRÌNH TRAINING
+## SLIDE 16 — QUÁ TRÌNH TRAINING (TRAIN TỪ SCRATCH)
 **Nội dung:**
-- Train từ đầu (from scratch) — 1 lần duy nhất, KHÔNG dùng Curriculum Learning
-- Script: `train_17d_place.py` — train trực tiếp toàn bộ quy trình Pick & Place
-- Hội tụ tốt nhờ 3 đột phá: Hybrid Gripper + Phase-Based Reward + Physics Clamp
-- File `train_17d_grasp.py` tồn tại như bản thiết kế Curriculum nhưng không cần sử dụng
+- Điểm khác biệt: **Train thẳng từ đầu (from scratch) trong 1 Phase duy nhất!**
+- Không sử dụng phương pháp Curriculum Learning (Chia nhỏ môi trường) phức tạp và tốn thời gian.
+- Tại sao làm được? Nhờ 3 đột phá đã trình bày: `Hybrid Gripper` + `Physics Clamp` + `Phase-Based Reward` → Môi trường đã được cách ly rủi ro hoàn hảo.
 
 **Hình ảnh:**
 ```
 ┌─────────────────────────────────────────────┐
-│  train_17d_place.py — FROM SCRATCH          │
+│  Script: train_17d_place.py                 │
 │                                             │
-│  10M steps │ 16 envs │ ~3 tiếng │ ~600 FPS  │
+│  10M steps │ 16 envs (song song) │ ~600 FPS │
 │                                             │
-│  ✓ Hybrid Gripper: AI chỉ học bay           │
-│  ✓ Phase-Based Reward: 3 giai đoạn          │
-│  ✓ Physics Clamp ±15°: tư thế thẳng đứng   │
-│  ✓ VecNormalize: observation + reward       │
-│                                             │
-│  Kết quả: 100% success rate                 │
+│  ✓ Mô phỏng tăng tốc 16 lần                 │
+│  ✓ VecNormalize: Chuẩn hóa Observation      │
+│  ✓ Entropy-Regularized SAC                  │
 └─────────────────────────────────────────────┘
 ```
 
 ---
 
-## SLIDE 16 — KẾT QUẢ TRAINING
+## SLIDE 17 — KẾT QUẢ TRAINING
 **Nội dung:**
 
-| Metric | Giá trị |
+| Metric | Kết Quả Đạt Được |
 |---|---|
-| Script | train_17d_place.py (from scratch) |
-| Steps | 10,000,000 |
-| Envs song song | 16 (SubprocVecEnv) |
-| Thời gian | ~3 tiếng |
-| Success rate | 100% (Tuyệt đối) |
-| FPS | ~600 |
-| Hardware | Core i7, 16GB RAM |
-| Output | best_model.zip + vecnormalize.pkl |
+| Số bước huấn luyện | 10,000,000 steps |
+| Thời gian huấn luyện | ~3 tiếng (CPU Core i7) |
+| Lỗi hội tụ | Giảm dần và ổn định sau 6M steps |
+| **Success rate** | **100% (Tuyệt đối sau khi hội tụ)** |
+| Sản phẩm đầu ra | `best_model.zip` & `vecnormalize.pkl` |
 
-**Hình ảnh:** Screenshot TensorBoard (nếu có) hoặc bảng log training cuối cùng
+**Hình ảnh:** Screenshot đồ thị TensorBoard (Reward tăng dần, Episode Length hội tụ về ngưỡng lý tưởng).
 
 ---
 
-## SLIDE 17 — SO SÁNH AUTO vs AI
+## SLIDE 18 — SO SÁNH AUTO vs AI
 **Nội dung:**
 
-| Tiêu chí | Auto (FSM) | AI (SAC) |
+| Tiêu chí | Chế độ Auto (FSM) | Chế độ AI (SAC) |
 |---|---|---|
-| Thành công | 100% ✓ | 100% ✓ (Đã chứng minh) |
-| Lập trình quỹ đạo | Cứng nhắc ✗ | Tự tối ưu ✓ |
-| Thích nghi | Không ✗ | Có ✓ |
-| Tư thế gắp | Thẳng chuẩn công nghiệp | Thẳng chuẩn (nhờ Clamp vật lý) |
-| Kết luận | Mất thời gian code logic dài | Linh hoạt, thông minh, code ngắn |
+| Tỉ lệ gắp thả | 100% | 100% |
+| Quỹ đạo | Góc cạnh vuông vức, cố định | Đường cong parabol tự tối ưu |
+| Thích nghi | Không thể (Lỗi nếu vật rơi) | Tự động đổi hướng đuổi theo vật |
+| Lập trình | Code cực dài, phức tạp | Code ngắn, để AI tự học quy luật |
 
-**Hình ảnh:** 2 ảnh so sánh quỹ đạo:
-- Auto: đường thẳng vuông góc (approach → descend → lift → move)
-- AI: đường cong mượt parabol tự nhiên
+**Hình ảnh:**
+- Sơ đồ 2 quỹ đạo: Một đường nét đứt vuông góc (Auto) và một đường nét liền hình parabol (AI).
 
 ---
 
-## SLIDE 18 — DEMO TRỰC TIẾP
+## SLIDE 19 — DEMO TRỰC TIẾP
 **Nội dung:**
-- Chạy `python -m hmi.app`
-- Demo 3 chế độ: Manual → Auto → AI
-- Nhấn mạnh: AI tự tìm đường, không lập trình trước
+- Chạy hệ thống thực tế trên phần mềm HMI nhóm tự phát triển: `python -m hmi.app`
+- Trình diễn chế độ Manual (Dùng thanh trượt điều khiển IK/FK).
+- Trình diễn chế độ Auto (FSM mượt mà).
+- Trình diễn chế độ AI (Kéo vật thể đi chỗ khác, xem AI tự tìm đường đến gắp).
+- Trình diễn hệ thống Fail-safe: Cố tình kéo robot ra ngoài không gian làm việc → Robot kích hoạt Auto-Home ngay lập tức.
 
-**Hành động:** Mở phần mềm, chạy live demo cho hội đồng xem
+**Hành động:** Chuyển sang màn hình PyBullet + PyQt5 để demo live!
 
 ---
 
-## SLIDE 19 — HẠN CHẾ & HƯỚNG PHÁT TRIỂN
+## SLIDE 20 — HẠN CHẾ & HƯỚNG PHÁT TRIỂN
 **Nội dung:**
 
 **Hạn chế:**
-- AI yếu ngoài vùng train (Out-of-Distribution)
-- Tọa độ vật từ PyBullet (chưa dùng camera thật)
-- Chưa Sim-to-Real
+- AI bị "ngáo" nếu vật bị đặt ngoài vùng không gian huấn luyện (Out-of-Distribution).
+- Đang dùng tọa độ tuyệt đối từ môi trường mô phỏng (omniscient), chưa dùng camera (Vision).
+- Chưa thể hiện Sim-to-Real trên tay máy UR5e thật.
 
 **Hướng phát triển:**
-1. Domain Randomization → mở rộng vùng hoạt động
-2. Camera RealSense + Point Cloud → thay thế omniscient
-3. ur_rtde → kết nối robot UR5e thật
-4. Multi-Object → phân loại theo màu/hình
+1. Áp dụng Domain Randomization mở rộng vùng học tập.
+2. Tích hợp Camera RealSense D435 xử lý Point Cloud.
+3. Sử dụng thư viện `ur_rtde` đẩy tín hiệu điều khiển thẳng từ AI xuống tủ điện robot thật.
+4. Gắp thả đa vật thể phân loại theo màu sắc/hình dáng.
 
 ---
 
-## SLIDE 20 — CẢM ƠN
+## SLIDE 21 — CẢM ƠN
 **Nội dung:**
-- Cảm ơn GVHD
-- Cảm ơn hội đồng
-- Q&A
+- Cảm ơn Thầy/Cô hướng dẫn đã hỗ trợ sát sao.
+- Cảm ơn Hội đồng đã lắng nghe.
+- Q&A (Mời Hội đồng đặt câu hỏi).
 
 ---
 
-# GHI CHÚ CHO NGƯỜI LÀM SLIDE:
-1. Tông màu đề xuất: Nền tối (dark theme) + accent xanh dương/tím
-2. Font: Roboto hoặc Inter (hiện đại, dễ đọc)
-3. Mỗi slide nên có ít nhất 1 hình ảnh/sơ đồ
-4. Các sơ đồ ASCII ở trên nên được vẽ lại bằng shape/diagram chuyên nghiệp
-5. Slide quan trọng nhất: Slide 14 (Reward Design) — đây là phần nghiên cứu cốt lõi
-6. Nên thêm animation cho các sơ đồ FSM và RL loop
+# GHI CHÚ DÀNH CHO THIẾT KẾ SLIDE:
+1. Tổng số: 21 slides.
+2. Tông màu đề xuất: Nền tối (dark/navy theme) + chữ trắng/xám sáng + accent xanh dương/cam.
+3. Font chữ: Roboto, Inter hoặc Montserrat (hiện đại, to rõ, dễ nhìn qua máy chiếu).
+4. Các sơ đồ code (ASCII) ở trên nên được vẽ lại bằng hình học (Shapes) trong PowerPoint/Canva.
+5. Tuyệt đối nhấn mạnh Slide 13, 14, 15 (Hybrid Gripper, Reward, Train từ Scratch) vì đây là "bài tẩy" của nhóm!
+6. Chuẩn bị sẵn file `best_model.zip` mở để chạy live (Slide 19).
