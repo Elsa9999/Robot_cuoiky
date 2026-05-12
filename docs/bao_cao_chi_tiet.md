@@ -120,9 +120,9 @@ Trong đó:
 - Đã được chứng minh hiệu quả trong robot manipulation (Haarnoja et al., 2018).
 
 **Kiến trúc mạng:**
-- Actor Network: MLP [512 → 512 → 256] → Action (7D)
-- Critic 1: MLP [512 → 512 → 256] → Q-value
-- Critic 2: MLP [512 → 512 → 256] → Q-value (twin critic chống overestimation)
+- Actor Network: MLP [256 → 256] → Action (7D)
+- Critic 1: MLP [256 → 256] → Q-value
+- Critic 2: MLP [256 → 256] → Q-value (twin critic chống overestimation)
 - Entropy coef: tự điều chỉnh từ giá trị khởi tạo 0.1
 
 ---
@@ -143,7 +143,7 @@ Hệ thống chia thành 4 tầng:
 - Workspace Validator kiểm tra giới hạn an toàn (X: 0.20-0.75m, Y: -0.30-0.30m, Z: 0.44-0.95m).
 
 ### 3.3 Chế độ Auto (FSM + Trajectory Planning)
-Cỗ máy trạng thái hữu hạn (Finite State Machine) điều phối 10 trạng thái:
+Cỗ máy trạng thái hữu hạn (Finite State Machine) điều phối 11 trạng thái:
 
 IDLE → DETECT → APPROACH → DESCEND → PICK → LIFT → MOVE_TO_BIN → PLACE → RELEASE → RETREAT → DONE
 
@@ -162,7 +162,7 @@ Timeout mỗi state: 15 giây. Nếu quá thời gian → ERROR.
 
 ### 3.4 Chế độ AI (SAC Reinforcement Learning)
 
-#### 3.4.1 Không gian Quan sát (Observation — 17D)
+#### 3.4.1 Không gian Quan sát (Observation — 20D)
 | Index | Ý nghĩa | Chiều |
 |---|---|---|
 | 0-2 | Vị trí EE (x, y, z) | 3 |
@@ -171,15 +171,18 @@ Timeout mỗi state: 15 giây. Nếu quá thời gian → ERROR.
 | 9-11 | Vector tương đối Vật → Bin | 3 |
 | 12-15 | Quaternion hướng vật (qx, qy, qz, qw) | 4 |
 | 16 | Trạng thái gripper (0 hoặc 1) | 1 |
+| 17-19 | EE euler (roll, pitch, yaw) | 3 |
 
-Quaternion (4D) cho phép AI nhận biết vật đang đứng hay nằm ngang → xoay cổ tay đúng góc tiếp cận.
+Quaternion (4D) cho phép AI nhận biết vật đang đứng hay nằm ngang. EE euler (3D) giúp AI giám sát tư thế cổ tay.
 
 #### 3.4.2 Không gian Hành động (Action — 7D)
 | Index | Ý nghĩa | Phạm vi | Đơn vị |
 |---|---|---|---|
 | 0-2 | Δx, Δy, Δz (dịch chuyển EE) | [-1, 1] × 5cm | cm/step |
 | 3-5 | ΔRoll, ΔPitch, ΔYaw (xoay cổ tay) | [-1, 1] × 4.5° | °/step |
-| 6 | Gripper (> 0 = gắp, ≤ 0 = nhả) | [-1, 1] | - |
+| 6 | *(Không sử dụng — Hybrid Gripper tự xử lý)* | [-1, 1] | - |
+
+**Nguyên lý Hybrid Gripper:** AI KHÔNG điều khiển gripper. Pha 0: gripper tự gắp khi EE gần vật < 4.5cm. Pha 1: giữ chặt. Pha 2: tự nhả khi EE gần bin < 5cm. Loại bỏ hoàn toàn Reward Hacking về gripper timing.
 
 #### 3.4.3 Thiết kế Hàm Reward — Phase-Based Architecture
 Đây là phần quan trọng nhất và đã trải qua 3 lần thiết kế lại:
@@ -189,42 +192,41 @@ Quaternion (4D) cho phép AI nhận biết vật đang đứng hay nằm ngang �
 **Lần 2 — Dense Reward (Parabolic Shaping):** Phạt bay thấp, phạt xa bin. Kết quả: AI bị Reward Hacking — không bật gripper để tránh bị phạt.
 
 **Lần 3 — Phase-Based Reward (phiên bản hiện tại):**
-Chia rõ 3 giai đoạn:
+Chia rõ 3 giai đoạn + time penalty mỗi step: −0.05
 
 PHA 0 — APPROACH & GRASP:
-  - Thưởng tiến gần vật: +1.5 × (1 - dist × 6)
-  - Phạt bay quá xa: -3.0 nếu dist > 0.5m
+  - Dense reward tiến gần vật: max(0, 2.0 − dist × 8.0)
   - Thưởng gắp thành công: +50 → chuyển sang Pha 1
 
 PHA 1 — CARRY:
-  - Thưởng nâng cao: +30 khi nâng ≥ 20cm
-  - Thưởng chiều cao: +4 × height
-  - Phạt bay thấp (< 0.62m): -6.0 (tránh va chạm thành thùng)
-  - Thưởng tiến về bin: +1.5 × (1 - dist_xy_bin × 4)
-  - Khi gần bin (< 15cm XY) → chuyển Pha 2
+  - Thưởng nâng cao (one-time): +30 khi nâng ≥ 20cm
+  - Phạt bay thấp (EE < 0.60m): −3.0 (tránh va chạm thành thùng)
+  - Dense reward tiến về bin: max(0, 2.0 − dist_xy × 5.0)
+  - Khi đã nâng + gần bin (< 15cm XY) → chuyển Pha 2
 
 PHA 2 — PLACE:
-  - Thưởng hạ chính xác: +2.5 × (1 - dist_bin_3d × 6)
+  - Dense reward hạ chính xác: max(0, 3.0 − dist_3d × 10.0)
   - Thưởng thả thành công vào bin: +500 → KẾT THÚC
-
-Phạt action norm nhẹ: -0.03 × ||action[:3]|| (chống giật cục, không ảnh hưởng gripper).
 
 #### 3.4.4 Curriculum Learning (Học theo giáo trình)
 
 **Phase 1 — Học Gắp (train_17d_grasp.py):**
 - Mục tiêu: Chỉ học tiếp cận + kích hoạt giác hút. Không cần mang tới bin.
-- Observation: 17D (17D ngay từ đầu để transition sang Phase 2 không bị lệch).
-- Reward: phạt khoảng cách (-dist × 2.0) + thưởng nâng (height × 10.0) + bonus +200 khi gắp & nâng 15cm.
+- Observation: 17D (giữ 17D để transition sang Phase 2 không bị lệch dimension).
+- Action: 7D — action[6] điều khiển gripper trực tiếp (chưa dùng Hybrid Gripper).
+- Reward: phạt khoảng cách (−dist × 2.0) + thưởng nâng (height × 10.0) + bonus +200 khi gắp & nâng 15cm.
 - Training: ~3 triệu steps, 4 envs, ~1 tiếng. Kết quả: 100% success rate.
 
 **Phase 2 — Học Pick & Place (train_17d_place.py):**
-- Load weights từ Phase 1 (Transfer Learning) → AI đã biết gắp, chỉ học thêm vận chuyển & thả.
-- Đột phá thuật toán: Thay vì thiết kế hàm phạt góc nghiêng (Orientation Penalty) rườm rà, chúng tôi áp dụng **Physics-Level Euler Clamp (±15°)** trực tiếp trong môi trường mô phỏng. Giúp giải quyết dứt điểm Reward Hacking.
-- Training: Tốc độ hội tụ tăng vọt. Chỉ cần 5.5 triệu steps, 20 parallel envs, ~2.5 tiếng trên Core i7.
-- Tốc độ: ~600 FPS (nhờ song song hóa 20 luồng CPU).
+- Observation nâng lên 20D (thêm 3D EE euler để giám sát tư thế cổ tay).
+- Đột phá 1 — Hybrid Gripper: AI KHÔNG điều khiển gripper, chỉ học navigation. Gripper tự gắp/nhả theo Phase. Loại bỏ hoàn toàn Reward Hacking.
+- Đột phá 2 — Physics-Level Euler Clamp (±15°): Thay vì thiết kế hàm phạt góc nghiêng phức tạp, clamp trực tiếp trong môi trường vật lý. AI luôn giữ tư thế thẳng đứng công nghiệp.
+- VecNormalize: Chuẩn hóa observation (mean=0, std=1) và reward tự động, giúp hội tụ ổn định.
+- Training: 10 triệu steps, 16 parallel envs, ~3 tiếng trên Core i7, 16GB RAM.
+- Tốc độ: ~600 FPS (nhờ song song hóa 16 luồng CPU).
 
 #### 3.4.5 Safety Layers (Lớp bảo vệ khi Inference)
-- **Jam Detector:** Nếu EE đứng yên > 2 giây → tự động release gripper + quay về HOME.
+- **Jam Detector:** Nếu EE đứng yên > ~3.3 giây (200 frames) → tự động release gripper + quay về HOME.
 - **Workspace Validator:** Clip tọa độ EE vào giới hạn an toàn.
 - **Dwell Time (0.5s):** Dừng nhịp sau khi gắp, mô phỏng thời gian bơm áp suất chân không.
 - **Retract Logic:** Sau khi thả xong → nâng tay lên → về HOME bằng Joint interpolation.
@@ -246,9 +248,9 @@ Phạt action norm nhẹ: -0.03 × ||action[:3]|| (chống giật cục, không 
 - Success rate: 100% | Mean reward: ~150
 
 **Phase 2 (Pick & Place):**
-- Steps: 5,500,000 | Envs: 20 | Thời gian: ~2.5 tiếng
+- Steps: 10,000,000 | Envs: 16 | Thời gian: ~3 tiếng
 - Success rate: 100% (kiểm chứng trên 50 chu kỳ ngẫu nhiên) | FPS: ~600
-- Tư thế thao tác (Orientation): Thẳng đứng y hệt Auto Mode, P2 Error = 0.000.
+- Tư thế thao tác (Orientation): Thẳng đứng y hệt Auto Mode (nhờ Physics Clamp ±15°).
 
 ### 4.3 So sánh Auto vs AI
 

@@ -174,7 +174,7 @@ velocity
 
 ## SLIDE 10 — CHẾ ĐỘ AUTO (FSM)
 **Nội dung:**
-- 10 trạng thái tuần tự
+- 11 trạng thái tuần tự
 - Mỗi state chạy 1 trajectory, khi xong → chuyển state tiếp
 - Timeout 15s/state → ERROR nếu kẹt
 
@@ -214,9 +214,9 @@ DONE ← RETREAT ← RELEASE ← PLACE ← LIFT ← MOVE_TO_BIN
 
 **Hình ảnh:** Kiến trúc mạng:
 ```
-Obs (17D) ──► Actor [512→512→256] ──► Action (7D)
-          ──► Critic₁ [512→512→256] ──► Q₁
-          ──► Critic₂ [512→512→256] ──► Q₂
+Obs (20D) ──► Actor [256→256] ──► Action (7D)
+          ──► Critic₁ [256→256] ──► Q₁
+          ──► Critic₂ [256→256] ──► Q₂
           ──► α (auto-tuned entropy)
 ```
 
@@ -225,18 +225,19 @@ Obs (17D) ──► Actor [512→512→256] ──► Action (7D)
 ## SLIDE 13 — OBSERVATION & ACTION SPACE
 **Nội dung:**
 
-**Observation (17D):**
+**Observation (20D):**
 | 0-2 | Vị trí EE (xyz) |
 | 3-5 | Vị trí vật (xyz) |
 | 6-8 | Vector EE→Vật |
 | 9-11 | Vector Vật→Bin |
 | 12-15 | Quaternion hướng vật |
 | 16 | Trạng thái gripper |
+| 17-19 | EE euler (roll, pitch, yaw) |
 
 **Action (7D):**
 | 0-2 | Δxyz (±5cm/step) |
 | 3-5 | ΔRoll/Pitch/Yaw (±4.5°/step) |
-| 6 | Gripper ON/OFF |
+| 6 | *(Không sử dụng — Hybrid Gripper tự xử lý)* |
 
 ---
 
@@ -249,35 +250,36 @@ Obs (17D) ──► Actor [512→512→256] ──► Action (7D)
 ```
 ┌─────────────────────────────────┐
 │  PHA 0 — APPROACH & GRASP      │
-│  Thưởng gần vật: +1.5          │
+│  Thưởng gần vật: +2.0          │
 │  ★ GẮP ĐƯỢC: +50 → Pha 1      │
 ├─────────────────────────────────┤
 │  PHA 1 — CARRY                  │
 │  Nâng ≥ 20cm: +30              │
-│  Bay thấp: −6 (tránh va chạm)  │
+│  Bay thấp: −3 (tránh va chạm)  │
 │  Gần bin XY < 15cm → Pha 2     │
 ├─────────────────────────────────┤
 │  PHA 2 — PLACE                  │
-│  Hạ đúng vị trí: +2.5          │
+│  Hạ đúng vị trí: +3.0          │
 │  ★ VÀO BIN: +500 → DONE ✓     │
 └─────────────────────────────────┘
-*Lưu ý đột phá*: Góc xoay nghiêng (EE Orientation) được kẹp chặt ±15° trực tiếp ở Môi trường Vật lý (Physics clamp), giúp Hàm Reward đơn giản hóa toàn diện, AI chỉ tập trung bay XYZ mà vẫn 100% giữ tư thế công nghiệp!
 ```
+
+**Lưu ý đột phá:** Góc xoay nghiêng (EE Orientation) được kẹp chặt ±15° trực tiếp ở Môi trường Vật lý (Physics clamp), giúp Hàm Reward đơn giản hóa toàn diện, AI chỉ tập trung bay XYZ mà vẫn 100% giữ tư thế công nghiệp!
 
 ---
 
 ## SLIDE 15 — CURRICULUM LEARNING
 **Nội dung:**
 - Phase 1 (Học Gắp): 3M steps, ~1 tiếng → AI biết gắp 100%
-- Phase 2 (Học Pick&Place): 5.5M steps, ~2.5 tiếng → AI biết cả quy trình với tư thế cực chuẩn
+- Phase 2 (Học Pick&Place): 10M steps, 16 envs song song, ~3 tiếng → AI biết cả quy trình với tư thế cực chuẩn
 - Transfer Learning & Physics Clamp: Sự kết hợp hoàn hảo giúp thời gian hội tụ rút ngắn gần một nửa!
 
 **Hình ảnh:**
 ```
 [Phase 1: Gắp]         [Phase 2: Pick & Place]
-  3M steps    ──────►    5.5M steps
-  4 envs      weights    20 envs
-  1 tiếng     transfer   2.5 tiếng
+  3M steps    ──────►    10M steps
+  4 envs      weights    16 envs
+  1 tiếng     transfer   ~3 tiếng
   100%                   100% (cả Test & HMI)
 ```
 
@@ -288,9 +290,9 @@ Obs (17D) ──► Actor [512→512→256] ──► Action (7D)
 
 | Metric | Phase 1 | Phase 2 |
 |---|---|---|
-| Steps | 3,000,000 | 5,500,000 |
-| Envs song song | 4 | 20 |
-| Thời gian | ~60 phút | ~2.5 tiếng |
+| Steps | 3,000,000 | 10,000,000 |
+| Envs song song | 4 | 16 |
+| Thời gian | ~60 phút | ~3 tiếng |
 | Success rate | 100% | 100% (Tuyệt đối) |
 | FPS | ~200 | ~600 |
 | Hardware | Core i7, 16GB RAM | Core i7, 16GB RAM |
