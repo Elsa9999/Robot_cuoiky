@@ -283,18 +283,18 @@ PHA 2 — PLACE:
 
 #### 3.4.4 Siêu tham số SAC (Hyperparameters)
 
-| Tham số | Phase 1 (Grasp) | Phase 2 (Place) | Ý nghĩa |
-|---|---|---|---|
-| learning_rate | 3e-4 | 3e-4 | Tốc độ học Adam |
-| gamma | 0.98 | 0.99 | Hệ số chiết khấu |
-| batch_size | 256 | 256 | Kích thước batch |
-| tau | 0.02 | 0.005 | Polyak averaging (Phase 2 ổn định hơn) |
-| buffer_size | 300,000 | 1,000,000 | Replay buffer |
-| learning_starts | 10,000 | 10,000 | Warm-up exploration |
-| gradient_steps | 1 | 1 | Gradient updates/step |
-| ent_coef | auto_0.1 | auto_0.1 | Entropy tự điều chỉnh |
-| net_arch | [256, 256, 256] | [256, 256] | Kiến trúc Actor/Critic |
-| use_sde | True | False | State-Dependent Exploration |
+| Tham số | Giá trị | Ý nghĩa |
+|---|---|---|
+| learning_rate | 3e-4 | Tốc độ học Adam (chuẩn SAC paper) |
+| gamma | 0.99 | Hệ số chiết khấu — task dài (~300 steps) |
+| batch_size | 256 | Kích thước batch |
+| tau | 0.005 | Polyak averaging (chuẩn paper) |
+| buffer_size | 1,000,000 | Replay buffer — đủ cho 10M steps off-policy |
+| learning_starts | 10,000 | Warm-up exploration trước khi học |
+| gradient_steps | 1 | Gradient updates/step — ổn định |
+| ent_coef | auto_0.1 | Entropy tự điều chỉnh, khởi tạo 0.1 |
+| net_arch | [256, 256] | Kiến trúc Actor/Critic MLP |
+| use_sde | False | State-Dependent Exploration OFF |
 
 #### 3.4.5 Quá trình Training (train_17d_place.py)
 
