@@ -200,7 +200,7 @@ Vận tốc
 | File | Chức năng |
 |------|-----------|
 | `train_17d_grasp.py` | Huấn luyện AI giai đoạn 1: Học gắp vật (SAC, 3M bước, ~1 tiếng). |
-| `train_17d_place.py` | Huấn luyện AI giai đoạn 2: Học gắp + thả vào thùng (Transfer Learning, 5.5M bước, ~2.5 tiếng). |
+| `train_17d_place.py` | **Huấn luyện AI Pick & Place**: Học gắp + thả vào thùng (Huấn luyện từ đầu / Train from scratch, 10M bước, observation 20D, action 7D, cơ chế Hybrid Gripper tự động, chuẩn hóa VecNormalize. Đạt tỉ lệ thành công 100% trong môi trường mô phỏng hiện tại với độ khó `difficulty=1`, không khẳng định trên robot thật hoặc các workspace khác). |
 | `requirements.txt` | Danh sách thư viện cần cài: pybullet, numpy, scipy, PyQt5, torch, stable-baselines3, gymnasium. |
 
 ---

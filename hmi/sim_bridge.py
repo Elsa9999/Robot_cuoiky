@@ -372,9 +372,11 @@ class SimBridge(QThread):
         import numpy as np
         from simulation.environment import CART_DELTA_MAX
         try:
-            from train_17d import EULER_DELTA_MAX
+            from train_17d_place import EULER_DELTA_MAX, UR5ePickPlaceEnv
+            CARRY_Z_MIN = UR5ePickPlaceEnv.CARRY_Z_MIN
         except ImportError:
             EULER_DELTA_MAX = 0.08
+            CARRY_Z_MIN = 0.60
             
         # NẾU đang trong giai đoạn thu tay về sau khi thả thành công HOẶC tự gỡ kẹt
         state_retract = getattr(self, '_ai_returning', 0)
@@ -382,7 +384,7 @@ class SimBridge(QThread):
             if state_retract == 1 or state_retract == 3:
                 # Phase 1: Kéo thẳng tay lên trời (Z) để thoát khỏi thành thùng rác
                 ee_cur = self._env.get_ee_position()
-                if ee_cur[2] > 0.25:
+                if ee_cur[2] > CARRY_Z_MIN:
                     self._ai_returning = 2 if state_retract == 1 else 4 # Chuyển sang Phase 2
                 else:
                     self._env.move_ee_cartesian([0.0, 0.0, 0.02]) # Kéo lên

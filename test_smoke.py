@@ -9,7 +9,8 @@ import numpy as np
 print("=== SMOKE TEST: Full Episode ===")
 env = UR5ePickPlaceEnv()
 obs, _ = env.reset()
-print(f"Obs shape: {obs.shape} (expect 17)")
+print(f"Obs shape: {obs.shape} (expect 20)")
+assert obs.shape == (20,), f"Expected observation shape (20,), but got {obs.shape}"
 
 total_reward = 0
 for i in range(100):
