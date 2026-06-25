@@ -28,7 +28,7 @@
 
 \begin{document}
 
-\title{Thiết kế môi trường học tăng cường SAC cho robot UR5e điều hướng quỹ đạo Cartesian trong tác vụ gắp-thả mô phỏng PyBullet}
+\title{Tìm hiểu và xây dựng môi trường học tăng cường SAC cho robot UR5e thực hiện tác vụ gắp thả trong PyBullet}
 
 \author{
 \IEEEauthorblockN{1\textsuperscript{st} Liên Gia Bảo}
@@ -47,7 +47,7 @@ n22dcdk008@student.ptithcm.edu.vn}
 \maketitle
 
 \begin{abstract}
-Bài báo trình bày chi tiết về thiết kế môi trường học tăng cường cho robot UR5e thực hiện tác vụ điều hướng quỹ đạo Cartesian phục vụ gắp và thả vật thể trong mô phỏng vật lý PyBullet. Tác vụ được mô hình hóa xấp xỉ theo quy trình quyết định Markov với không gian quan sát 20 chiều và không gian hành động liên tục 7 chiều (bao gồm 6 chiều điều khiển Cartesian thực tế và 1 chiều tay gắp dư thừa không được sử dụng trực tiếp do cơ chế tay gắp lai tự động). Thuật toán Soft Actor Critic được lựa chọn để huấn luyện chính sách điều hướng cho robot từ đầu mà không cần qua giai đoạn tiền huấn luyện. Nhằm giải quyết các thách thức về sự thưa thớt của phần thưởng và hiện tượng tối ưu hóa sai lệch, chúng tôi đề xuất cơ chế tay gắp lai tự động kích hoạt dựa trên khoảng cách vật lý, bộ ràng buộc tư thế đầu hút và hàm phần thưởng phân chia theo pha cụ thể. Hệ thống được cấu hình huấn luyện với ngân sách tối đa 10 triệu bước thời gian; các log đánh giá thực tế được sử dụng trong bài hiện có đến mốc 6.6 triệu bước, với cấu trúc vector hóa song song 16 môi trường và áp dụng chuẩn hóa VecNormalize. Kết quả đánh giá cho thấy từ mốc 600,000 bước, mô hình không ghi nhận episode thất bại trong 20 episode tại mỗi lần đánh giá, với điểm phần thưởng gốc trung bình đạt 570.20 và số bước thực thi trung bình là 28.65 bước. Kết quả này được ghi nhận trên một seed huấn luyện duy nhất (seed 42) và chỉ trên phân phối vật thể cấu hình \texttt{difficulty=1}. Checkpoint cuối 10 triệu bước không được sử dụng để lập đồ thị do không có log đánh giá tương ứng. Các kết quả cho thấy tính khả thi của phương pháp thiết kế môi trường và hàm thưởng trong việc hỗ trợ tác tử học quỹ đạo điều hướng trong cấu hình mô phỏng đang xét, đồng thời bài báo thảo luận thẳng thắn về các giới hạn hiện tại liên quan đến tính tổng quát của kết quả, chiều hành động dư thừa và khoảng cách giữa mô phỏng và thực tế.
+Bài báo trình bày về việc xây dựng môi trường học tăng cường cho robot UR5e thực hiện tác vụ gắp thả vật thể trong mô phỏng vật lý PyBullet. Tác vụ được mô hình hóa xấp xỉ theo quy trình quyết định Markov với không gian quan sát 20 chiều và không gian hành động liên tục 7 chiều. Để giải quyết các thách thức về sự thưa thớt của phần thưởng và hiện tượng tối ưu hóa sai lệch, chúng tôi đề xuất cơ chế tay gắp lai (Hybrid Gripper) tự động kích hoạt dựa trên khoảng cách vật lý, kết hợp bộ ràng buộc tư thế đầu gắp và hàm phần thưởng phân chia theo pha cụ thể. Thuật toán Soft Actor Critic (SAC) được áp dụng để huấn luyện chính sách điều khiển từ đầu. Kết quả thực nghiệm với cấu hình độ khó trung bình (\texttt{difficulty=1}) và trên một seed duy nhất (seed 42) cho thấy sau 600,000 bước huấn luyện, tác tử đạt tỷ lệ thành công ổn định trong các lượt đánh giá định kỳ, di chuyển theo quỹ đạo ngắn và an toàn để hoàn thành tác vụ gắp thả. Các giới hạn về tính tổng quát của chính sách và khoảng cách mô phỏng - thực tế cũng được thảo luận thẳng thắn.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -72,7 +72,7 @@ J(\pi) = \sum_{t=0}^{T} \mathbb{E}_{(s_t,a_t)\sim\rho_\pi} \left[ r(s_t,a_t) + \
 \end{equation}
 Trong đó $\mathcal{H}(\cdot)$ là hàm entropy của chính sách $\pi$, và $\alpha$ là tham số nhiệt độ quyết định mức độ ưu tiên của entropy so với phần thưởng thu được. Trong không gian hành động liên tục, chính sách được mô hình hóa bằng một phân phối Gaussian nhiều chiều với trung bình và độ lệch chuẩn được xuất ra từ mạng neural của actor.
 
-Thuật toán SAC sử dụng hai mạng critic độc lập để ước lượng giá trị trạng thái hành động $Q_{\theta_1}(s, a)$ and $Q_{\theta_2}(s, a)$ nhằm giảm thiểu sự ước lượng quá cao của giá trị $Q$. Quá trình cập nhật các tham số mạng critic được thực hiện bằng cách tối thiểu hóa sai số Bellman:
+Thuật toán SAC sử dụng hai mạng critic độc lập để ước lượng giá trị trạng thái hành động $Q_{\theta_1}(s, a)$ và $Q_{\theta_2}(s, a)$ nhằm giảm thiểu sự ước lượng quá cao của giá trị $Q$. Quá trình cập nhật các tham số mạng critic được thực hiện bằng cách tối thiểu hóa sai số Bellman:
 \begin{equation}
 L(\theta_i) = \mathbb{E}_{(s,a,r,s')\sim \mathcal{D}} \left[ \left( Q_{\theta_i}(s,a) - \left( r + \gamma V_{\bar{\psi}}(s') \right) \right)^2 \right]
 \end{equation}
@@ -284,7 +284,7 @@ Trong các tác vụ gắp thả sử dụng thuật toán học tăng cường,
 Nhờ cơ chế này, mạng neural của tác tử không cần tối ưu thời điểm đóng mở tay gắp mà có thể tập trung vào việc học quỹ đạo pose Cartesian của đầu công tác.
 
 \subsection{Ràng buộc hướng đầu công tác}
-Giác hút chân không cần được giữ hướng vuông góc với mặt bàn để việc tiếp cận và hút vật thể đạt độ tin cậy cao nhất. Để đạt được điều này, chúng tôi áp dụng một bộ ràng buộc tư thế vật lý trực tiếp lên giá trị góc đích trước khi gửi đến bộ giải động học nghịch:
+Giác hút chân không cần được giữ hướng vuông góc với mặt bàn để việc tiếp cận và hút vật thể đạt độ tin cậy cao hơn. Để đạt được điều này, chúng tôi áp dụng một bộ ràng buộc tư thế vật lý trực tiếp lên giá trị góc đích trước khi gửi đến bộ giải động học nghịch:
 \begin{itemize}
     \item Góc Roll của đầu công tác trong hệ tọa độ thế giới được kẹp chặt quanh biên trị số $\pm\pi$ với dung sai dao động cho phép là $\pm15^\circ$ ($\pm\pi/12$ rad).
     \item Góc Pitch được kẹp quanh trị số 0 với dung sai cho phép là $\pm15^\circ$ ($\pm\pi/12$ rad).
@@ -325,7 +325,7 @@ Toàn bộ các giá trị quan sát của môi trường và điểm số phầ
 \scriptsize
 \begin{tabularx}{\columnwidth}{@{}p{0.44\columnwidth}X@{}}
 \toprule
-Siêu tham số & Giá trị tối ưu\\
+Siêu tham số & Giá trị cấu hình\\
 \midrule
 Mạng chính sách Actor & MLP $[256, 256]$\\
 Mạng giá trị Critic & MLP $[256, 256]$\\
@@ -357,10 +357,10 @@ Tiến trình học tập của tác tử SAC được ghi nhận thông qua t�
 \label{fig:eval_curves}
 \end{figure*}
 
-Phân tích số liệu từ tệp đánh giá thực tế cho thấy các đặc điểm phát triển chính sách rất rõ ràng qua các giai đoạn học tập:
+Phân tích số liệu từ tệp đánh giá thực tế cho thấy các đặc điểm phát triển chính sách qua một số giai đoạn chính:
 \begin{itemize}
     \item \textit{Giai đoạn khởi đầu (Dưới 400,000 bước)}: Tác tử đang tích cực khám phá không gian hoạt động. Tại mốc 200,000 bước thời gian, tỷ lệ thành công gắp thả đạt mức 80.0\% với điểm phần thưởng trung bình là 509.29 và số bước thực hiện trung bình khá cao là 89.70 bước. Tại mốc 400,000 bước, do tác tử tiếp tục khám phá các khu vực hành động mới nên hiệu suất có sự biến động nhẹ với tỷ lệ thành công đạt 75.0\%, điểm số phần thưởng trung bình là 524.46 và chiều dài chu kỳ tăng lên 112.25 bước.
-    \item \textit{Giai đoạn hội tụ (Từ mốc 600,000 bước)}: Tại mốc đánh giá 600,000 bước thời gian, tác tử đã hội tụ về chính sách ổn định. Lần đánh giá định kỳ gồm 20 episode không ghi nhận episode thất bại (trong số 20 episode tại lần đánh giá đó) và kết quả này được duy trì ổn định. Điểm số phần thưởng trung bình đạt mức cao và ổn định là 570.20 với độ lệch chuẩn ở mức nhỏ là 3.08. Chiều dài chu kỳ thực hiện trung bình giảm mạnh xuống còn 28.65 bước, cho thấy tác tử đã di chuyển theo các đường đi thẳng ngắn hơn để thả vật.
+    \item \textit{Giai đoạn hội tụ (Từ mốc 600,000 bước)}: Tại mốc đánh giá 600,000 bước thời gian, tác tử đã hội tụ về chính sách ổn định. Lần đánh giá định kỳ gồm 20 episode không ghi nhận episode thất bại (trong số 20 episode tại lần đánh giá đó) và kết quả này tiếp tục được ghi nhận trong log đánh giá hiện có. Điểm số phần thưởng trung bình đạt mức cao và ổn định là 570.20 với độ lệch chuẩn ở mức nhỏ là 3.08. Chiều dài chu kỳ thực hiện trung bình giảm mạnh xuống còn 28.65 bước, cho thấy tác tử đã di chuyển theo các đường đi thẳng ngắn hơn để thả vật.
     \item \textit{Giai đoạn ổn định lâu dài (Đến 6,600,000 bước)}: Khi tiếp tục huấn luyện kéo dài đến mốc 6,600,000 bước thời gian trong log đánh giá hiện có, chính sách tiếp tục không ghi nhận episode thất bại trong 20 episode tại mỗi lần đánh giá. Chiều dài chu kỳ trung bình dao động quanh mức 24.90 bước, với điểm phần thưởng ổn định ở mức 568.45 và độ lệch chuẩn ở mức 1.63. Điều này cho thấy thuật toán SAC kết hợp với chuẩn hóa VecNormalize có khả năng duy trì độ ổn định chính sách cao, không ghi nhận hiện tượng suy thoái chính sách khi huấn luyện lâu dài.
 \end{itemize}
 
