@@ -177,8 +177,8 @@ Môi trường mô phỏng được xây dựng trong môi trường PyBullet \c
     \item \textit{Thông số vật lý mô phỏng}: Tần số mô phỏng của thế giới vật lý PyBullet được đặt ở mức chuẩn là 240 Hz (bước thời gian vật lý là 1/240 giây). Đối với vòng lặp học tăng cường, mỗi bước thực thi hành động của tác tử (RL Step) tương ứng với việc chạy liên tục 10 bước mô phỏng vật lý PyBullet (physics steps). Tần số điều khiển thực tế của tác tử do đó là 24 Hz, giúp đảm bảo các chuyển động diễn ra mượt mà và tránh các xung lực vật lý bất thường gây nổ mô phỏng.
 \end{itemize}
 
-\subsection{Quy luật sinh vật thể và chương trình huấn luyện tăng dần}
-Để nâng cao độ khó của nhiệm vụ và giúp chính sách học được các hành vi xoay khớp linh hoạt, chúng tôi áp dụng chương trình học tăng dần (Curriculum Learning) dựa trên ba mức độ khó khác nhau khi reset môi trường:
+\subsection{Quy luật sinh vật thể và các mức độ khó của môi trường}
+Môi trường được thiết kế với ba cấu hình sinh vật thể có mức độ khó khác nhau nhằm phục vụ huấn luyện và đánh giá:
 \begin{itemize}
     \item Mức \texttt{difficulty=0}: Vật thể chỉ được sinh ra trong một phạm vi hẹp có bán kính từ 0.12 m đến 0.25 m quanh vị trí nghỉ ban đầu của đầu gắp, đồng thời vật thể luôn được đặt thẳng đứng trên bàn.
     \item Mức \texttt{difficulty=1}: Phạm vi sinh vật thể được mở rộng từ 0.05 m đến 0.25 m. Đồng thời, có 50\% xác suất vật thể bị sinh ra ở tư thế nằm ngang ngẫu nhiên trên mặt bàn. Khi vật thể nằm ngang, tọa độ cao độ Z của vật thể được hạ thấp xuống mức TABLE\_SURFACE + 0.02 m (tương ứng với bán kính đáy) thay vì cao độ TABLE\_SURFACE + 0.033 m khi đặt đứng thẳng. Đây là cấu hình huấn luyện chính được sử dụng để thu thập các kết quả đánh giá trong báo cáo này.
